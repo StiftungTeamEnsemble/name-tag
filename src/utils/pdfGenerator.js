@@ -352,7 +352,13 @@ export class PdfGenerator {
             }
 
             const fontBytes = await response.arrayBuffer();
-            const font = await this.pdfDoc.embedFont(fontBytes);
+            
+            // Embed font with subset to reduce file size and use custom name
+            const font = await this.pdfDoc.embedFont(fontBytes, { 
+                subset: true,
+                customName: fontConfig.name
+            });
+            
             this.fontCache[cacheKey] = font;
             return font;
         } catch (error) {
