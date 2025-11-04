@@ -191,8 +191,10 @@ export class PdfGenerator {
 
     /**
      * Draw a text element with custom font
+     * Position refers to the top-left corner of the text box (like HTML)
+     * Returns the height consumed by the text (useful for story elements)
      */
-    async drawText(element, item, labelX, labelY, labelHeight) {
+    async drawText(element, item, labelX, labelY, labelHeight, returnHeight = false) {
         try {
             // Replace template variables
             let text = element.content
@@ -201,13 +203,11 @@ export class PdfGenerator {
 
             // Skip rendering if text is empty after replacement
             if (!text.trim()) {
-                return;
+                return returnHeight ? 0 : undefined;
             }
 
             const textX = labelX + this.mmToPoints(element.position.x);
-            // Flip Y coordinate (pdf-lib uses bottom-left origin)
-            const textY = labelY + labelHeight - this.mmToPoints(element.position.y);
-
+            
             // Set text properties
             const hexColor = element.color || '#000000';
             const rgbColor = this.hexToRgb(hexColor);
@@ -216,9 +216,36 @@ export class PdfGenerator {
 
             const font = await this.ensureFont(element.font);
 
+            // Calculate the em-square and leading
+            const emSquare = fontSize;
+            const totalLineHeight = fontSize * lineHeight;
+            const leading = totalLineHeight - emSquare;
+            const halfLeading = leading / 2;
+
+            // Position is top-left, but PDF uses baseline positioning
+            // So we need to offset by ascent + half-leading from the top
+            const fontAscent = fontSize * 0.8; // Approximate ascent ratio
+            const baselineOffsetFromTop = fontAscent + halfLeading;
+            
+            // Convert position.y (from top) to PDF coordinates (from bottom)
+            const textY = labelY + labelHeight - this.mmToPoints(element.position.y) - baselineOffsetFromTop;
+
+            let totalHeight = 0;
+
             // Check if text should wrap within a width
             if (element.width) {
-                await this.drawMultilineText(text, textX, textY, element.width, fontSize, lineHeight, font, rgbColor, element.font.features, element.autoSize);
+                totalHeight = await this.drawMultilineText(
+                    text, 
+                    textX, 
+                    textY, 
+                    element.width, 
+                    fontSize, 
+                    lineHeight, 
+                    font, 
+                    rgbColor, 
+                    element.font.features, 
+                    element.autoSize
+                );
             } else {
                 // Draw single line text
                 const drawOptions = {
@@ -235,9 +262,13 @@ export class PdfGenerator {
                 }
 
                 this.page.drawText(text, drawOptions);
+                totalHeight = totalLineHeight;
             }
+
+            return returnHeight ? totalHeight : undefined;
         } catch (error) {
             console.error('Error drawing text:', error);
+            return returnHeight ? 0 : undefined;
         }
     }
 
@@ -245,12 +276,12 @@ export class PdfGenerator {
      * Draw a story element with children text elements stacked vertically
      * Children are rendered one after another like HTML blocks
      * Position x/y is ignored for children, but topPadding and bottomPadding are respected
+     * Works like HTML: each block has its em-square + leading, and blocks stack with padding
      */
     async drawStory(element, item, labelX, labelY, labelHeight) {
         try {
-            // Start position for the story
-            const storyX = labelX + this.mmToPoints(element.position.x);
-            let currentY = labelY + labelHeight - this.mmToPoints(element.position.y);
+            // Start position for the story (top-left corner)
+            let currentY = element.position.y;
 
             // Process each child element
             if (element.children && Array.isArray(element.children)) {
@@ -263,69 +294,37 @@ export class PdfGenerator {
 
                     // Apply top padding if specified
                     if (child.topPadding) {
-                        currentY -= this.mmToPoints(child.topPadding);
+                        currentY += child.topPadding;
                     }
 
-                    // Replace template variables
-                    let text = child.content
-                        .replace('{{name}}', item.name || '')
-                        .replace('{{function}}', item.function || '');
-
-                    // Skip rendering if text is empty after replacement
-                    if (!text.trim()) {
-                        continue;
-                    }
-
-                    // Set text properties
-                    const hexColor = child.color || '#000000';
-                    const rgbColor = this.hexToRgb(hexColor);
-                    const fontSize = child.font.size;
-                    const lineHeight = child.font.lineHeight || 1.2;
-
-                    const font = await this.ensureFont(child.font);
-
-                    // Calculate text height to advance currentY
-                    let textHeight = 0;
-
-                    if (child.width) {
-                        // Multi-line text
-                        textHeight = await this.drawMultilineTextWithHeight(
-                            text, 
-                            storyX, 
-                            currentY, 
-                            child.width, 
-                            fontSize, 
-                            lineHeight, 
-                            font, 
-                            rgbColor, 
-                            child.font.features, 
-                            child.autoSize
-                        );
-                    } else {
-                        // Single line text
-                        const drawOptions = {
-                            x: storyX,
-                            y: currentY,
-                            size: fontSize,
-                            font: font,
-                            color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
-                        };
-
-                        // Add OpenType features if specified
-                        if (child.font.features) {
-                            drawOptions.features = this.convertFeatures(child.font.features);
+                    // Create a modified element with the current Y position
+                    const modifiedChild = {
+                        ...child,
+                        position: {
+                            x: element.position.x,
+                            y: currentY
                         }
+                    };
 
-                        this.page.drawText(text, drawOptions);
-                        textHeight = fontSize * lineHeight;
-                    }
+                    // Draw the text and get its height (including leading)
+                    const textHeight = await this.drawText(
+                        modifiedChild,
+                        item,
+                        labelX,
+                        labelY,
+                        labelHeight,
+                        true // Return height
+                    );
 
-                    // Move down by the height of the text
-                    currentY -= textHeight;
+                    // Convert height from points back to mm
+                    const textHeightMm = textHeight / this.mmToPoints(1);
+
+                    // Move down by the height of the text block (em-square + leading)
+                    currentY += textHeightMm;
 
                     // Apply bottom padding if specified
                     if (child.bottomPadding) {
-                        currentY -= this.mmToPoints(child.bottomPadding);
+                        currentY += child.bottomPadding;
                     }
                 }
             }
@@ -336,6 +335,8 @@ export class PdfGenerator {
 
     /**
      * Draw multi-line text within a specified width
+     * Returns the total height consumed by the text (including leading)
+     * y parameter is the baseline position of the first line
      */
     async drawMultilineText(text, x, y, widthMm, fontSize, lineHeight, font, rgbColor, features, autoSize = false) {
         const maxWidth = this.mmToPoints(widthMm);
@@ -361,7 +362,7 @@ export class PdfGenerator {
             }
         }
         
-        const lineSpacing = adjustedFontSize * lineHeight;
+        const totalLineHeight = adjustedFontSize * lineHeight;
         
         // Split text into words
         const words = text.split(' ');
@@ -386,83 +387,11 @@ export class PdfGenerator {
             lines.push(currentLine);
         }
 
-        // Draw each line
+        // Draw each line with proper line-height spacing
         for (let i = 0; i < lines.length; i++) {
             const drawOptions = {
                 x: x,
-                y: y - (i * lineSpacing),
-                size: adjustedFontSize,
-                font: font,
-                color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
-            };
-
-            // Add OpenType features if specified
-            if (features) {
-                drawOptions.features = this.convertFeatures(features);
-            }
-
-            this.page.drawText(lines[i], drawOptions);
-        }
-    }
-
-    /**
-     * Draw multi-line text and return the total height consumed
-     * This is a variant of drawMultilineText that returns height for story elements
-     */
-    async drawMultilineTextWithHeight(text, x, y, widthMm, fontSize, lineHeight, font, rgbColor, features, autoSize = false) {
-        const maxWidth = this.mmToPoints(widthMm);
-        let adjustedFontSize = fontSize;
-        
-        // If autoSize is enabled, calculate the scale factor needed
-        if (autoSize) {
-            // Find the longest word or line that won't wrap
-            const words = text.split(' ');
-            let maxWordWidth = 0;
-            
-            for (const word of words) {
-                const wordWidth = font.widthOfTextAtSize(word, fontSize);
-                if (wordWidth > maxWordWidth) {
-                    maxWordWidth = wordWidth;
-                }
-            }
-            
-            // If the longest word exceeds max width, scale down the font
-            if (maxWordWidth > maxWidth) {
-                const scaleFactor = maxWidth / maxWordWidth;
-                adjustedFontSize = fontSize * scaleFactor;
-            }
-        }
-        
-        const lineSpacing = adjustedFontSize * lineHeight;
-        
-        // Split text into words
-        const words = text.split(' ');
-        const lines = [];
-        let currentLine = '';
-
-        for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const testWidth = font.widthOfTextAtSize(testLine, adjustedFontSize);
-
-            if (testWidth > maxWidth && currentLine) {
-                // Line is too long, push current line and start new one
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
-        }
-        
-        // Push the last line
-        if (currentLine) {
-            lines.push(currentLine);
-        }
-
-        // Draw each line
-        for (let i = 0; i < lines.length; i++) {
-            const drawOptions = {
-                x: x,
-                y: y - (i * lineSpacing),
+                y: y - (i * totalLineHeight), // Each line moves down by totalLineHeight
                 size: adjustedFontSize,
                 font: font,
                 color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
@@ -476,8 +405,8 @@ export class PdfGenerator {
             this.page.drawText(lines[i], drawOptions);
         }
 
-        // Return total height consumed (number of lines * line spacing)
-        return lines.length * lineSpacing;
+        // Return total height consumed (number of lines * totalLineHeight)
+        return lines.length * totalLineHeight;
     }
 
     /**

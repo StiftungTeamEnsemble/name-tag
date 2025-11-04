@@ -7,30 +7,38 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * Label Layout Configuration
  * Defines the structure and styling for name tags
  *
+ * POSITIONING MODEL (HTML-like):
+ * All positions use a top-left coordinate system (like HTML).
+ * Text blocks include their em-square + leading (extra space from line-height).
+ * Leading is distributed equally above and below the text (half-leading).
+ *
  * Element Types:
- * 
+ *
  * 1. Image Element:
  * - src: URL or path to the image/PDF
  * - width: Width in mm
  * - height: Height in mm or "auto" for aspect ratio
- * - position: { x, y } coordinates in mm
+ * - position: { x, y } coordinates in mm (top-left corner)
  *
  * 2. Text Element:
  * - content: Template string with {{name}} and {{function}} placeholders
  * - Empty fields will be skipped (no rendering if text is empty)
  * - width: (optional) Text box width in mm for multi-line text wrapping
  * - autoSize: (optional) Auto-scale text down to fit within width if any line is too long
- * - position: { x, y } coordinates in mm
+ * - position: { x, y } coordinates in mm (top-left corner of the text box)
  * - font.lineHeight: (optional) Line height multiplier (e.g., 1.2 = 120% of font size)
+ *   The extra space (leading) is distributed above and below the text
  * - topPadding: (optional, story children only) Padding above text in mm
  * - bottomPadding: (optional, story children only) Padding below text in mm
  *
  * 3. Story Element:
  * - type: "story"
- * - position: { x, y } starting coordinates in mm
+ * - position: { x, y } starting coordinates in mm (top-left corner)
  * - children: Array of text elements (only text type allowed)
- * - Children are rendered sequentially like HTML blocks (ignoring their individual position)
- * - Children support topPadding and bottomPadding for spacing
+ * - Children are rendered sequentially like HTML blocks
+ * - Each child's position is ignored; they stack vertically
+ * - Children support topPadding and bottomPadding for spacing between blocks
+ * - Text blocks naturally include their leading space (from lineHeight)
  *
  * Example Story Element:
  * {
@@ -40,9 +48,9 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  *     {
  *       type: "text",
  *       content: "{{name}}",
- *       topPadding: 2,
- *       bottomPadding: 3,
- *       font: { size: 18, file: geistSemiBoldFontUrl, name: "Geist-SemiBold", style: "normal" },
+ *       topPadding: 2,      // Extra space above this block
+ *       bottomPadding: 3,   // Extra space below this block
+ *       font: { size: 18, file: geistSemiBoldFontUrl, name: "Geist-SemiBold", style: "normal", lineHeight: 1.2 },
  *       color: "#000000",
  *       width: 60,
  *       autoSize: true
@@ -52,7 +60,7 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  *       content: "{{function}}",
  *       topPadding: 1,
  *       bottomPadding: 2,
- *       font: { size: 10, file: merriweatherRegularFontUrl, name: "Merriweather-Regular", style: "normal" },
+ *       font: { size: 10, file: merriweatherRegularFontUrl, name: "Merriweather-Regular", style: "normal", lineHeight: 1.2 },
  *       color: "#666666",
  *       width: 60
  *     }
@@ -107,74 +115,10 @@ export const labelLayouts = {
         },
       },
       {
-        type: "text",
-        content: "{{name}}",
-        font: {
-          size: 18,
-          file: geistSemiBoldFontUrl,
-          name: "Geist-SemiBold",
-          style: "normal",
-          lineHeight: 1.2, // Line height multiplier (1.2 = 120% of font size)
-          features: {
-            ss03: true, // Stylistic Set 03
-          },
-        },
-        color: "#000000",
-        width: 56, // Text box width in mm for multi-line wrapping
-        autoSize: true, // Auto-scale text to fit within width if line is too long
-        position: {
-          x: 10,
-          y: 10.5,
-        },
-      },
-      {
-        type: "text",
-        content: "{{function}}",
-        font: {
-          size: 8,
-          file: merriweatherRegularFontUrl,
-          name: "Merriweather-Regular",
-          style: "normal",
-        },
-        color: "#000000",
-        width: 56, // Text box width in mm for multi-line wrapping
-        autoSize: true, // Auto-scale text to fit within width if line is too long
-        position: {
-          x: 10,
-          y: 16,
-        },
-      },
-    ],
-  },
-
-  "zweckform-L4785-20-story": {
-    name: "Zweckform L4785-20 (Story Example)",
-    paperFormat: "A4",
-    labelsX: 2,
-    labelsY: 5,
-    labelWidth: 80,
-    labelHeight: 50,
-    gapX: 15,
-    gapY: 5,
-    marginLeft: 17.5,
-    marginTop: 13.5,
-    showBorder: true, // Set to true for debugging label positioning
-    elements: [
-      {
-        type: "image",
-        src: logoPdfUrl,
-        width: 25,
-        height: "auto",
-        position: {
-          x: 10,
-          y: 42,
-        },
-      },
-      {
         type: "story",
         position: {
           x: 10,
-          y: 10.5,
+          y: 5,
         },
         children: [
           {
@@ -216,8 +160,6 @@ export const labelLayouts = {
       },
     ],
   },
-
-
 };
 
 /**
