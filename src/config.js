@@ -125,7 +125,7 @@ export const labelLayouts = {
             type: "text",
             content: "{{name}}",
             topPadding: 0,
-            bottomPadding: 1,
+            bottomPadding: 0,
             font: {
               size: 18,
               file: geistSemiBoldFontUrl,
@@ -143,7 +143,7 @@ export const labelLayouts = {
           {
             type: "text",
             content: "{{function}}",
-            topPadding: 0,
+            topPadding: 5,
             bottomPadding: 0,
             font: {
               size: 8,

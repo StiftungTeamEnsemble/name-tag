@@ -223,8 +223,8 @@ export class PdfGenerator {
             const halfLeading = leading / 2;
 
             // Position is top-left, but PDF uses baseline positioning
-            // So we need to offset by ascent + half-leading from the top
-            const fontAscent = fontSize * 0.8; // Approximate ascent ratio
+            // Get actual font metrics from the font file
+            const fontAscent = font.heightAtSize(fontSize, { descender: false });
             const baselineOffsetFromTop = fontAscent + halfLeading;
             
             // Convert position.y (from top) to PDF coordinates (from bottom)
