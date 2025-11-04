@@ -200,6 +200,42 @@ previewModal.addEventListener("click", (e) => {
   }
 });
 
+// Keyboard shortcuts for PDF preview
+document.addEventListener("keydown", (e) => {
+  if (!previewModal.classList.contains("show") || !pdfPreviewManager) {
+    return;
+  }
+
+  switch (e.key) {
+    case "ArrowLeft":
+    case "PageUp":
+      e.preventDefault();
+      pdfPreviewManager.previousPage();
+      break;
+    case "ArrowRight":
+    case "PageDown":
+      e.preventDefault();
+      pdfPreviewManager.nextPage();
+      break;
+    case "+":
+    case "=":
+      e.preventDefault();
+      pdfPreviewManager.zoomIn();
+      break;
+    case "-":
+      e.preventDefault();
+      pdfPreviewManager.zoomOut();
+      break;
+    case "0":
+      e.preventDefault();
+      pdfPreviewManager.zoomReset();
+      break;
+    case "Escape":
+      previewModal.classList.remove("show");
+      break;
+  }
+});
+
 document.getElementById("prevPageBtn").addEventListener("click", async () => {
   if (pdfPreviewManager) {
     await pdfPreviewManager.previousPage();
@@ -209,6 +245,24 @@ document.getElementById("prevPageBtn").addEventListener("click", async () => {
 document.getElementById("nextPageBtn").addEventListener("click", async () => {
   if (pdfPreviewManager) {
     await pdfPreviewManager.nextPage();
+  }
+});
+
+document.getElementById("zoomInBtn").addEventListener("click", async () => {
+  if (pdfPreviewManager) {
+    await pdfPreviewManager.zoomIn();
+  }
+});
+
+document.getElementById("zoomOutBtn").addEventListener("click", async () => {
+  if (pdfPreviewManager) {
+    await pdfPreviewManager.zoomOut();
+  }
+});
+
+document.getElementById("zoomResetBtn").addEventListener("click", async () => {
+  if (pdfPreviewManager) {
+    await pdfPreviewManager.zoomReset();
   }
 });
 

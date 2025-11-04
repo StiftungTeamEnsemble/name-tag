@@ -105,20 +105,25 @@
               <button class="close-btn" id="closePreview">&times;</button>
             </div>
             <div class="modal-body">
-              <div
-                id="pdfViewer"
-                style="height: 600px; overflow: auto; border: 1px solid #ddd"
-              ></div>
-              <div
-                id="pdfControls"
-                style="margin-top: 10px; text-align: center"
-              >
-                <button id="prevPageBtn">Previous</button>
-                <span id="pageInfo"></span>
-                <button id="nextPageBtn">Next</button>
-                <button id="downloadPdfBtn" class="btn btn-success">
-                  Download PDF
-                </button>
+              <div id="pdfViewer"></div>
+              <div id="pdfControls">
+                <div class="control-group">
+                  <button id="zoomOutBtn" title="Zoom Out">−</button>
+                  <button id="zoomResetBtn" title="Reset Zoom">100%</button>
+                  <button id="zoomInBtn" title="Zoom In">+</button>
+                </div>
+                <div class="control-separator"></div>
+                <div class="control-group">
+                  <button id="prevPageBtn" title="Previous Page">◄ Previous</button>
+                  <span id="pageInfo"></span>
+                  <button id="nextPageBtn" title="Next Page">Next ►</button>
+                </div>
+                <div class="control-separator"></div>
+                <div class="control-group">
+                  <button id="downloadPdfBtn" class="btn btn-success" title="Download PDF">
+                    Download PDF
+                  </button>
+                </div>
               </div>
             </div>
           </div>

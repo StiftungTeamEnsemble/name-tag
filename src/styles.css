@@ -316,9 +316,9 @@ tr:hover {
     background-color: white;
     padding: 0;
     border-radius: 8px;
-    width: 90%;
-    max-width: 900px;
-    max-height: 90vh;
+    width: 95vw;
+    max-width: 1400px;
+    height: 95vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -328,12 +328,14 @@ tr:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .modal-header h2 {
     margin: 0;
+    font-size: 1.3rem;
 }
 
 .close-btn {
@@ -342,6 +344,13 @@ tr:hover {
     font-size: 28px;
     cursor: pointer;
     color: var(--secondary-color);
+    line-height: 1;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .close-btn:hover {
@@ -350,20 +359,101 @@ tr:hover {
 
 .modal-body {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-height: 0;
+}
+
+#pdfViewer {
+    flex: 1;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: #e5e5e5;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 0;
+    padding: 20px;
+}
+
+#pdfViewer canvas {
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: white;
 }
 
 #pdfControls {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    align-items: center;
+    gap: 15px;
     flex-wrap: wrap;
+    padding: 12px;
+    background: var(--background-color);
+    border-radius: 4px;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-separator {
+    width: 1px;
+    height: 30px;
+    background: var(--border-color);
 }
 
 #pdfControls button {
     padding: 8px 16px;
-    margin: 5px;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+#pdfControls button:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+#pdfControls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#pdfControls .btn-success {
+    background-color: var(--success-color);
+    color: white;
+    border-color: var(--success-color);
+}
+
+#pdfControls .btn-success:hover:not(:disabled) {
+    background-color: #15803d;
+}
+
+#zoomOutBtn,
+#zoomInBtn {
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 8px 12px;
+    min-width: 40px;
+}
+
+#zoomResetBtn {
+    min-width: 60px;
 }
 
 #pageInfo {
