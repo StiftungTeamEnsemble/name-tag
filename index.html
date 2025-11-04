@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Name Tag PDF Generator</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Name Tag PDF Generator</h1>
+        <p>Create professional name tags from CSV or manual input</p>
+      </header>
+
+      <main>
+        <div class="form-section">
+          <!-- Input Section -->
+          <div class="input-section">
+            <h2>1. Add Names & Functions</h2>
+
+            <div class="input-tabs">
+              <button class="tab-btn active" data-tab="csv">CSV Upload</button>
+              <button class="tab-btn" data-tab="manual">Manual Input</button>
+            </div>
+
+            <!-- CSV Upload -->
+            <div id="csv-tab" class="tab-content active">
+              <div class="upload-area" id="dropZone">
+                <svg
+                  class="upload-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p>Drag & drop CSV file or click to select</p>
+                <small>Format: Name[TAB]Function</small>
+                <input type="file" id="csvFile" accept=".csv" hidden />
+              </div>
+            </div>
+
+            <!-- Manual Input -->
+            <div id="manual-tab" class="tab-content">
+              <textarea
+                id="manualInput"
+                placeholder="Enter names and functions&#10;Format: Name[TAB]Function&#10;&#10;Example:&#10;John Doe	Director&#10;Jane Smith	Manager"
+              ></textarea>
+            </div>
+
+            <button id="parseBtn" class="btn btn-primary">Parse Data</button>
+          </div>
+
+          <!-- Preview Section -->
+          <div class="preview-section">
+            <h2>2. Preview Data</h2>
+            <div id="previewTable" class="preview-table" style="display: none">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Function</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="previewBody"></tbody>
+              </table>
+            </div>
+            <div id="noPreview" class="no-preview">No data loaded yet</div>
+          </div>
+
+          <!-- Layout Section -->
+          <div class="layout-section">
+            <h2>3. Select Layout</h2>
+
+            <div class="layout-selector">
+              <label for="layoutSelect">Predefined Layout:</label>
+              <select id="layoutSelect">
+                <option value="zweckform-L4785-20">
+                  Zweckform L4785-20 (80×50mm)
+                </option>
+                <option value="custom">Custom Layout</option>
+              </select>
+            </div>
+
+            <div id="customLayout" class="custom-layout" style="display: none">
+              <h3>Custom Layout Parameters</h3>
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="paperFormat">Paper Format:</label>
+                  <select id="paperFormat">
+                    <option value="A4">A4</option>
+                    <option value="Letter">Letter</option>
+                    <option value="A3">A3</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="labelsX">Labels per Row (X):</label>
+                  <input
+                    type="number"
+                    id="labelsX"
+                    min="1"
+                    max="10"
+                    value="2"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="labelsY">Labels per Column (Y):</label>
+                  <input
+                    type="number"
+                    id="labelsY"
+                    min="1"
+                    max="20"
+                    value="5"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="gapX">Gap X (mm):</label>
+                  <input
+                    type="number"
+                    id="gapX"
+                    min="0"
+                    max="20"
+                    value="15"
+                    step="0.5"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="gapY">Gap Y (mm):</label>
+                  <input
+                    type="number"
+                    id="gapY"
+                    min="0"
+                    max="20"
+                    value="5"
+                    step="0.5"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="startLeft">Start Left (mm):</label>
+                  <input
+                    type="number"
+                    id="startLeft"
+                    min="0"
+                    max="17.5"
+                    value="5"
+                    step="0.5"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="startTop">Start Top (mm):</label>
+                <input
+                  type="number"
+                  id="startTop"
+                  min="0"
+                  max="30"
+                  value="13.5"
+                  step="0.5"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate Section -->
+          <div class="generate-section">
+            <button id="generateBtn" class="btn btn-success" disabled>
+              Generate PDF
+            </button>
+            <button id="previewPdfBtn" class="btn btn-secondary" disabled>
+              Preview PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- PDF Preview Modal -->
+        <div id="previewModal" class="modal" style="display: none">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>PDF Preview</h2>
+              <button class="close-btn" id="closePreview">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div
+                id="pdfViewer"
+                style="height: 600px; overflow: auto; border: 1px solid #ddd"
+              ></div>
+              <div
+                id="pdfControls"
+                style="margin-top: 10px; text-align: center"
+              >
+                <button id="prevPageBtn">Previous</button>
+                <span id="pageInfo"></span>
+                <button id="nextPageBtn">Next</button>
+                <button id="downloadPdfBtn" class="btn btn-success">
+                  Download PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "name-tag-pdf-generator",
+  "version": "1.0.0",
+  "description": "PDF generator for creating name tags",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "jspdf": "^2.5.1",
+    "pdfjs-dist": "^4.0.379"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "gh-pages": "^6.1.1",
+    "vite": "^5.0.8"
+  }
+}
