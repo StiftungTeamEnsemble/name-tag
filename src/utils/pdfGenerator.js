@@ -54,8 +54,8 @@ export class PdfGenerator {
     /**
      * Generate PDF and trigger download
      */
-    generate() {
-        const pdfBytes = this.generateBytes();
+    async generate() {
+        const pdfBytes = await this.generateBytes();
         this.triggerDownload(pdfBytes);
     }
 
@@ -72,8 +72,7 @@ export class PdfGenerator {
             format: this.layout.paperFormat
         });
 
-        let labelIndex = 0;
-        const labelsPerPage = this.layout.labelsX * this.layout.labelsY;
+    let labelIndex = 0;
 
         for (let rowIdx = 0; rowIdx < this.layout.labelsY; rowIdx++) {
             for (let colIdx = 0; colIdx < this.layout.labelsX; colIdx++) {
@@ -106,7 +105,7 @@ export class PdfGenerator {
         // Render each element from config
         for (const element of this.layoutConfig.elements) {
             if (element.type === 'image') {
-                this.drawImage(element, x, y);
+                await this.drawImage(element, x, y);
             } else if (element.type === 'text') {
                 await this.drawText(element, item, x, y);
             }
@@ -116,17 +115,35 @@ export class PdfGenerator {
     /**
      * Draw an image element
      */
-    drawImage(element, labelX, labelY) {
+    async drawImage(element, labelX, labelY) {
         try {
             const imgX = labelX + element.position.x;
             const imgY = labelY + element.position.y;
             const imgWidth = element.width;
             
-            // Load and embed SVG/image - for now we'll skip this as it requires additional processing
-            // In production, convert SVG to canvas or use imgData
-            // this.pdf.addImage(imgData, 'SVG', imgX, imgY, imgWidth, imgWidth);
+            // Load SVG
+            const svgData = await this.loadSvg(element.src);
+            if (svgData) {
+                // Use jsPDF's addSvg method
+                const imgHeight = element.height ?? element.width;
+                this.pdf.addSvg(svgData, imgX, imgY, imgWidth, imgHeight);
+            }
         } catch (error) {
             console.error('Error drawing image:', error);
+        }
+    }
+
+    /**
+     * Load SVG as string
+     */
+    async loadSvg(svgPath) {
+        try {
+            const response = await fetch(svgPath);
+            const svgText = await response.text();
+            return svgText;
+        } catch (error) {
+            console.error('Error loading SVG:', error);
+            return null;
         }
     }
 
@@ -148,10 +165,11 @@ export class PdfGenerator {
             const rgbColor = this.hexToRgb(hexColor);
             this.pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
             this.pdf.setFontSize(element.font.size);
-            
-            // Use available fonts in jsPDF
-            const fontWeight = element.font.weight === 'bold' ? 'bold' : 'normal';
-            this.pdf.setFont(undefined, fontWeight);
+
+            await this.ensureFont(element.font);
+            if (element.font?.name) {
+                this.pdf.setFont(element.font.name, element.font.style || 'normal');
+            }
 
             // Draw text
             const maxWidth = this.layout.labelWidth - element.position.x - 1;
@@ -172,6 +190,43 @@ export class PdfGenerator {
             g: parseInt(result[2], 16),
             b: parseInt(result[3], 16)
         } : { r: 0, g: 0, b: 0 };
+    }
+
+    async ensureFont(fontConfig) {
+        if (!fontConfig?.file || !fontConfig?.name) {
+            return;
+        }
+
+        const cacheKey = `${fontConfig.name}-${fontConfig.style || 'normal'}`;
+        if (this.fontCache[cacheKey]) {
+            return;
+        }
+
+        try {
+            const response = await fetch(fontConfig.file);
+            if (!response.ok) {
+                throw new Error(`Failed to load font at ${fontConfig.file}`);
+            }
+
+            const buffer = await response.arrayBuffer();
+            const fontData = this.arrayBufferToBase64(buffer);
+            const fileName = `${cacheKey}.ttf`;
+            this.pdf.addFileToVFS(fileName, fontData);
+            this.pdf.addFont(fileName, fontConfig.name, fontConfig.style || 'normal');
+            this.fontCache[cacheKey] = true;
+        } catch (error) {
+            console.error('Error loading font:', error);
+        }
+    }
+
+    arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
     }
 
     /**

@@ -1,3 +1,7 @@
+import logoSvgUrl from "../assets/logo.svg?url";
+import geistRegularFontUrl from "../assets/fonts/Geist/ttf/Geist-Regular.ttf?url";
+import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriweather-Regular.ttf?url";
+
 /**
  * Label Layout Configuration
  * Defines the structure and styling for name tags
@@ -18,39 +22,42 @@ export const labelLayouts = {
     elements: [
       {
         type: "image",
-        src: "./assets/logo.svg",
+        src: logoSvgUrl,
         width: 8,
+        height: 8,
         position: {
           x: 2,
-          y: 1.5,
+          y: 12.8,
         },
       },
       {
         type: "text",
         content: "{{name}}",
-        fontPath: "./assets/fonts/Geist/ttf/Geist-Bold.ttf",
         font: {
           size: 11,
-          weight: "bold",
+          file: geistRegularFontUrl,
+          name: "Geist-Regular",
+          style: "normal",
         },
         color: "#000000",
         position: {
-          x: 5,
-          y: 5.5,
+          x: 12,
+          y: 8,
         },
       },
       {
         type: "text",
         content: "{{function}}",
-        fontPath: "./assets/fonts/Merriweather/ttf/Merriweather-Regular.ttf",
         font: {
           size: 8,
-          weight: "normal",
+          file: merriweatherRegularFontUrl,
+          name: "Merriweather-Regular",
+          style: "normal",
         },
-        color: "#000000",
+        color: "#444444",
         position: {
-          x: 5,
-          y: 17.5,
+          x: 12,
+          y: 14.5,
         },
       },
     ],
@@ -70,8 +77,9 @@ export const labelLayouts = {
     elements: [
       {
         type: "image",
-        src: "./assets/logo.svg",
+        src: logoSvgUrl,
         width: 12,
+        height: 12,
         position: {
           x: 2,
           y: 2,
@@ -80,29 +88,31 @@ export const labelLayouts = {
       {
         type: "text",
         content: "{{name}}",
-        fontPath: "./assets/fonts/Geist/ttf/Geist-Bold.ttf",
         font: {
           size: 14,
-          weight: "bold",
+          file: geistRegularFontUrl,
+          name: "Geist-Regular",
+          style: "normal",
         },
         color: "#000000",
         position: {
           x: 16,
-          y: 7,
+          y: 10,
         },
       },
       {
         type: "text",
         content: "{{function}}",
-        fontPath: "./assets/fonts/Merriweather/ttf/Merriweather-Regular.ttf",
         font: {
           size: 10,
-          weight: "normal",
+          file: merriweatherRegularFontUrl,
+          name: "Merriweather-Regular",
+          style: "normal",
         },
         color: "#666666",
         position: {
-          x: 2,
-          y: 25,
+          x: 16,
+          y: 18,
         },
       },
     ],
@@ -144,23 +154,32 @@ export function createCustomLayout(params) {
     elements: params.elements || [
       {
         type: "image",
-        src: "./assets/logo.svg",
+        src: logoSvgUrl,
         width: 12,
+        height: 12,
         position: { x: 2, y: 2 },
       },
       {
         type: "text",
         content: "{{name}}",
-        fontPath: "./assets/fonts/Geist/ttf/Geist-Bold.ttf",
-        font: { size: 14, weight: "bold" },
+        font: {
+          size: 14,
+          file: geistRegularFontUrl,
+          name: "Geist-Regular",
+          style: "normal",
+        },
         color: "#000000",
         position: { x: 16, y: 7 },
       },
       {
         type: "text",
         content: "{{function}}",
-        fontPath: "./assets/fonts/Merriweather/ttf/Merriweather-Regular.ttf",
-        font: { size: 10, weight: "normal" },
+        font: {
+          size: 10,
+          file: merriweatherRegularFontUrl,
+          name: "Merriweather-Regular",
+          style: "normal",
+        },
         color: "#666666",
         position: { x: 2, y: 25 },
       },
