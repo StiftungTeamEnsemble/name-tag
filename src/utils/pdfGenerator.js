@@ -1,10 +1,23 @@
 import jsPDF from 'jspdf';
+import { getLayoutConfig } from '../config.js';
 
 export class PdfGenerator {
-    constructor(data, layout) {
+    constructor(data, layoutName) {
         this.data = data;
-        this.layout = layout;
+        this.layoutConfig = getLayoutConfig(layoutName);
+        this.layout = {
+            paperFormat: this.layoutConfig.paperFormat,
+            labelsX: this.layoutConfig.labelsX,
+            labelsY: this.layoutConfig.labelsY,
+            labelWidth: this.layoutConfig.labelWidth,
+            labelHeight: this.layoutConfig.labelHeight,
+            gapX: this.layoutConfig.gapX,
+            gapY: this.layoutConfig.gapY,
+            marginLeft: this.layoutConfig.marginLeft,
+            marginTop: this.layoutConfig.marginTop
+        };
         this.pdf = null;
+        this.fontCache = {};
     }
 
     /**
@@ -49,7 +62,7 @@ export class PdfGenerator {
     /**
      * Generate PDF bytes
      */
-    generateBytes() {
+    async generateBytes() {
         this.calculateLabelDimensions();
         
         const pageDims = this.getPageDimensions(this.layout.paperFormat);
@@ -60,7 +73,6 @@ export class PdfGenerator {
         });
 
         let labelIndex = 0;
-        let currentPage = 1;
         const labelsPerPage = this.layout.labelsX * this.layout.labelsY;
 
         for (let rowIdx = 0; rowIdx < this.layout.labelsY; rowIdx++) {
@@ -73,7 +85,7 @@ export class PdfGenerator {
                 const x = this.layout.marginLeft + colIdx * (this.layout.labelWidth + this.layout.gapX);
                 const y = this.layout.marginTop + rowIdx * (this.layout.labelHeight + this.layout.gapY);
 
-                this.drawLabel(this.data[labelIndex], x, y);
+                await this.drawLabel(this.data[labelIndex], x, y);
                 labelIndex++;
             }
 
@@ -84,32 +96,82 @@ export class PdfGenerator {
     }
 
     /**
-     * Draw a single label
+     * Draw a single label with configured elements
      */
-    drawLabel(item, x, y) {
+    async drawLabel(item, x, y) {
         // Draw border
         this.pdf.setDrawColor(200, 200, 200);
         this.pdf.rect(x, y, this.layout.labelWidth, this.layout.labelHeight);
 
-        // Set font
-        this.pdf.setTextColor(0, 0, 0);
-        this.pdf.setFontSize(12);
-        this.pdf.setFont(undefined, 'bold');
+        // Render each element from config
+        for (const element of this.layoutConfig.elements) {
+            if (element.type === 'image') {
+                this.drawImage(element, x, y);
+            } else if (element.type === 'text') {
+                await this.drawText(element, item, x, y);
+            }
+        }
+    }
 
-        // Name
-        const nameMaxWidth = this.layout.labelWidth - 4;
-        const nameLines = this.pdf.splitTextToSize(item.name, nameMaxWidth);
-        this.pdf.text(nameLines, x + 2, y + 6);
+    /**
+     * Draw an image element
+     */
+    drawImage(element, labelX, labelY) {
+        try {
+            const imgX = labelX + element.position.x;
+            const imgY = labelY + element.position.y;
+            const imgWidth = element.width;
+            
+            // Load and embed SVG/image - for now we'll skip this as it requires additional processing
+            // In production, convert SVG to canvas or use imgData
+            // this.pdf.addImage(imgData, 'SVG', imgX, imgY, imgWidth, imgWidth);
+        } catch (error) {
+            console.error('Error drawing image:', error);
+        }
+    }
 
-        // Function
-        const functionY = y + this.layout.labelHeight - 6;
-        this.pdf.setFontSize(10);
-        this.pdf.setFont(undefined, 'normal');
-        const functionMaxWidth = this.layout.labelWidth - 4;
-        const functionLines = this.pdf.splitTextToSize(item.function, functionMaxWidth);
-        
-        // Draw function text aligned to bottom
-        this.pdf.text(functionLines, x + 2, functionY - (functionLines.length - 1) * 4);
+    /**
+     * Draw a text element with custom font
+     */
+    async drawText(element, item, labelX, labelY) {
+        try {
+            // Replace template variables
+            const text = element.content
+                .replace('{{name}}', item.name)
+                .replace('{{function}}', item.function);
+
+            const textX = labelX + element.position.x;
+            const textY = labelY + element.position.y;
+
+            // Set text properties
+            const hexColor = element.color || '#000000';
+            const rgbColor = this.hexToRgb(hexColor);
+            this.pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
+            this.pdf.setFontSize(element.font.size);
+            
+            // Use available fonts in jsPDF
+            const fontWeight = element.font.weight === 'bold' ? 'bold' : 'normal';
+            this.pdf.setFont(undefined, fontWeight);
+
+            // Draw text
+            const maxWidth = this.layout.labelWidth - element.position.x - 1;
+            const lines = this.pdf.splitTextToSize(text, maxWidth);
+            this.pdf.text(lines, textX, textY);
+        } catch (error) {
+            console.error('Error drawing text:', error);
+        }
+    }
+
+    /**
+     * Convert hex color to RGB
+     */
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
     }
 
     /**

@@ -158,17 +158,17 @@ layoutSelect.addEventListener("change", (e) => {
 });
 
 // Generate PDF
-generateBtn.addEventListener("click", () => {
+generateBtn.addEventListener("click", async () => {
   if (nameTagData.length === 0) {
     showError("No data to generate PDF");
     return;
   }
 
-  const layout = getSelectedLayout();
-  pdfGenerator = new PdfGenerator(nameTagData, layout);
+  const layoutName = layoutSelect.value;
+  pdfGenerator = new PdfGenerator(nameTagData, layoutName);
 
   try {
-    pdfGenerator.generate();
+    await pdfGenerator.generate();
     showSuccess("PDF generated successfully!");
   } catch (error) {
     showError(`Error generating PDF: ${error.message}`);
@@ -182,11 +182,11 @@ previewPdfBtn.addEventListener("click", async () => {
     return;
   }
 
-  const layout = getSelectedLayout();
-  pdfGenerator = new PdfGenerator(nameTagData, layout);
+  const layoutName = layoutSelect.value;
+  pdfGenerator = new PdfGenerator(nameTagData, layoutName);
 
   try {
-    const pdfBytes = pdfGenerator.generateBytes();
+    const pdfBytes = await pdfGenerator.generateBytes();
     pdfPreviewManager = new PdfPreviewManager(pdfBytes);
     await pdfPreviewManager.init();
 
@@ -225,38 +225,6 @@ document.getElementById("downloadPdfBtn").addEventListener("click", () => {
     showSuccess("PDF downloaded!");
   }
 });
-
-function getSelectedLayout() {
-  const layoutType = layoutSelect.value;
-
-  if (layoutType === "zweckform-L4785-20") {
-    return {
-      name: "Zweckform L4785-20",
-      paperFormat: "A4",
-      labelsX: 2,
-      labelsY: 5,
-      labelWidth: 80,
-      labelHeight: 50,
-      gapX: 15,
-      gapY: 5,
-      marginLeft: 17.5,
-      marginTop: 13.5,
-    };
-  } else {
-    return {
-      name: "Custom",
-      paperFormat: document.getElementById("paperFormat").value,
-      labelsX: parseInt(document.getElementById("labelsX").value),
-      labelsY: parseInt(document.getElementById("labelsY").value),
-      labelWidth: null, // Will be calculated
-      labelHeight: null, // Will be calculated
-      gapX: parseFloat(document.getElementById("gapX").value),
-      gapY: parseFloat(document.getElementById("gapY").value),
-      marginLeft: parseFloat(document.getElementById("startLeft").value),
-      marginTop: parseFloat(document.getElementById("startTop").value),
-    };
-  }
-}
 
 // Utility Functions
 function escapeHtml(text) {
