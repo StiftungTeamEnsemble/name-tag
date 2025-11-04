@@ -1,4 +1,5 @@
-import jsPDF from 'jspdf';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { getLayoutConfig } from '../config.js';
 
 export class PdfGenerator {
@@ -16,18 +17,23 @@ export class PdfGenerator {
             marginLeft: this.layoutConfig.marginLeft,
             marginTop: this.layoutConfig.marginTop
         };
-        this.pdf = null;
+        this.pdfDoc = null;
         this.fontCache = {};
+        this.page = null;
     }
 
     /**
-     * Get page dimensions in mm
+     * Get page dimensions in points (pdf-lib uses points: 1mm = 2.834645669291339 points)
      */
+    mmToPoints(mm) {
+        return mm * 2.834645669291339;
+    }
+
     getPageDimensions(format) {
         const dimensions = {
-            'A4': { width: 210, height: 297 },
-            'Letter': { width: 215.9, height: 279.4 },
-            'A3': { width: 297, height: 420 }
+            'A4': { width: this.mmToPoints(210), height: this.mmToPoints(297) },
+            'Letter': { width: this.mmToPoints(215.9), height: this.mmToPoints(279.4) },
+            'A3': { width: this.mmToPoints(297), height: this.mmToPoints(420) }
         };
         return dimensions[format] || dimensions['A4'];
     }
@@ -42,9 +48,11 @@ export class PdfGenerator {
 
         const pageDims = this.getPageDimensions(this.layout.paperFormat);
         
-        // Calculate available space
-        const availableWidth = pageDims.width - (2 * this.layout.marginLeft);
-        const availableHeight = pageDims.height - (2 * this.layout.marginTop);
+        // Calculate available space (convert back to mm for calculation)
+        const pageWidthMm = pageDims.width / 2.834645669291339;
+        const pageHeightMm = pageDims.height / 2.834645669291339;
+        const availableWidth = pageWidthMm - (2 * this.layout.marginLeft);
+        const availableHeight = pageHeightMm - (2 * this.layout.marginTop);
         
         // Calculate label dimensions accounting for gaps
         this.layout.labelWidth = (availableWidth - (this.layout.labelsX - 1) * this.layout.gapX) / this.layout.labelsX;
@@ -66,13 +74,12 @@ export class PdfGenerator {
         this.calculateLabelDimensions();
         
         const pageDims = this.getPageDimensions(this.layout.paperFormat);
-        this.pdf = new jsPDF({
-            orientation: pageDims.width > pageDims.height ? 'l' : 'p',
-            unit: 'mm',
-            format: this.layout.paperFormat
-        });
+        this.pdfDoc = await PDFDocument.create();
+        this.pdfDoc.registerFontkit(fontkit);
+        
+        this.page = this.pdfDoc.addPage([pageDims.width, pageDims.height]);
 
-    let labelIndex = 0;
+        let labelIndex = 0;
 
         for (let rowIdx = 0; rowIdx < this.layout.labelsY; rowIdx++) {
             for (let colIdx = 0; colIdx < this.layout.labelsX; colIdx++) {
@@ -80,9 +87,9 @@ export class PdfGenerator {
                     break;
                 }
 
-                // Calculate position
-                const x = this.layout.marginLeft + colIdx * (this.layout.labelWidth + this.layout.gapX);
-                const y = this.layout.marginTop + rowIdx * (this.layout.labelHeight + this.layout.gapY);
+                // Calculate position (pdf-lib uses bottom-left origin, so we need to flip Y)
+                const x = this.mmToPoints(this.layout.marginLeft + colIdx * (this.layout.labelWidth + this.layout.gapX));
+                const y = pageDims.height - this.mmToPoints(this.layout.marginTop + rowIdx * (this.layout.labelHeight + this.layout.gapY)) - this.mmToPoints(this.layout.labelHeight);
 
                 await this.drawLabel(this.data[labelIndex], x, y);
                 labelIndex++;
@@ -91,42 +98,68 @@ export class PdfGenerator {
             if (labelIndex >= this.data.length) break;
         }
 
-        return this.pdf.output('arraybuffer');
+        return await this.pdfDoc.save();
     }
 
     /**
      * Draw a single label with configured elements
      */
     async drawLabel(item, x, y) {
+        const labelWidth = this.mmToPoints(this.layout.labelWidth);
+        const labelHeight = this.mmToPoints(this.layout.labelHeight);
+
         // Draw border
-        this.pdf.setDrawColor(200, 200, 200);
-        this.pdf.rect(x, y, this.layout.labelWidth, this.layout.labelHeight);
+        this.page.drawRectangle({
+            x: x,
+            y: y,
+            width: labelWidth,
+            height: labelHeight,
+            borderColor: rgb(0.78, 0.78, 0.78),
+            borderWidth: 0.5,
+        });
 
         // Render each element from config
         for (const element of this.layoutConfig.elements) {
             if (element.type === 'image') {
-                await this.drawImage(element, x, y);
+                await this.drawImage(element, x, y, labelHeight);
             } else if (element.type === 'text') {
-                await this.drawText(element, item, x, y);
+                await this.drawText(element, item, x, y, labelHeight);
             }
         }
     }
 
     /**
-     * Draw an image element
+     * Draw an image element (PDF)
      */
-    async drawImage(element, labelX, labelY) {
+    async drawImage(element, labelX, labelY, labelHeight) {
         try {
-            const imgX = labelX + element.position.x;
-            const imgY = labelY + element.position.y;
-            const imgWidth = element.width;
+            const imgX = labelX + this.mmToPoints(element.position.x);
+            // Flip Y coordinate (pdf-lib uses bottom-left origin)
+            const imgY = labelY + labelHeight - this.mmToPoints(element.position.y);
+            const imgWidth = this.mmToPoints(element.width);
             
-            // Load SVG
-            const svgData = await this.loadSvg(element.src);
-            if (svgData) {
-                // Use jsPDF's addSvg method
-                const imgHeight = element.height ?? element.width;
-                this.pdf.addSvg(svgData, imgX, imgY, imgWidth, imgHeight);
+            // Load PDF
+            const pdfData = await this.loadPdf(element.src);
+            if (pdfData) {
+                const logoPdf = await PDFDocument.load(pdfData);
+                const [logoPage] = await this.pdfDoc.embedPdf(logoPdf, [0]);
+                
+                // Calculate height maintaining aspect ratio if "auto"
+                let imgHeight;
+                if (element.height === "auto") {
+                    const aspectRatio = logoPage.height / logoPage.width;
+                    imgHeight = imgWidth * aspectRatio;
+                } else {
+                    imgHeight = this.mmToPoints(element.height);
+                }
+                
+                // Draw embedded PDF page (adjust Y to account for height)
+                this.page.drawPage(logoPage, {
+                    x: imgX,
+                    y: imgY - imgHeight,
+                    width: imgWidth,
+                    height: imgHeight,
+                });
             }
         } catch (error) {
             console.error('Error drawing image:', error);
@@ -134,15 +167,15 @@ export class PdfGenerator {
     }
 
     /**
-     * Load SVG as string
+     * Load PDF as bytes
      */
-    async loadSvg(svgPath) {
+    async loadPdf(pdfPath) {
         try {
-            const response = await fetch(svgPath);
-            const svgText = await response.text();
-            return svgText;
+            const response = await fetch(pdfPath);
+            const pdfBytes = await response.arrayBuffer();
+            return pdfBytes;
         } catch (error) {
-            console.error('Error loading SVG:', error);
+            console.error('Error loading PDF:', error);
             return null;
         }
     }
@@ -150,34 +183,55 @@ export class PdfGenerator {
     /**
      * Draw a text element with custom font
      */
-    async drawText(element, item, labelX, labelY) {
+    async drawText(element, item, labelX, labelY, labelHeight) {
         try {
             // Replace template variables
             const text = element.content
                 .replace('{{name}}', item.name)
                 .replace('{{function}}', item.function);
 
-            const textX = labelX + element.position.x;
-            const textY = labelY + element.position.y;
+            const textX = labelX + this.mmToPoints(element.position.x);
+            // Flip Y coordinate (pdf-lib uses bottom-left origin)
+            const textY = labelY + labelHeight - this.mmToPoints(element.position.y);
 
             // Set text properties
             const hexColor = element.color || '#000000';
             const rgbColor = this.hexToRgb(hexColor);
-            this.pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
-            this.pdf.setFontSize(element.font.size);
+            const fontSize = element.font.size;
 
-            await this.ensureFont(element.font);
-            if (element.font?.name) {
-                this.pdf.setFont(element.font.name, element.font.style || 'normal');
+            const font = await this.ensureFont(element.font);
+
+            // Prepare draw options
+            const drawOptions = {
+                x: textX,
+                y: textY,
+                size: fontSize,
+                font: font,
+                color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
+            };
+
+            // Add OpenType features if specified
+            if (element.font.features) {
+                drawOptions.features = this.convertFeatures(element.font.features);
             }
 
             // Draw text
-            const maxWidth = this.layout.labelWidth - element.position.x - 1;
-            const lines = this.pdf.splitTextToSize(text, maxWidth);
-            this.pdf.text(lines, textX, textY);
+            this.page.drawText(text, drawOptions);
         } catch (error) {
             console.error('Error drawing text:', error);
         }
+    }
+
+    /**
+     * Convert feature object to array format for pdf-lib
+     * OpenType features like { ss03: true, liga: false } 
+     * become [{ tag: 'ss03', value: 1 }, { tag: 'liga', value: 0 }]
+     */
+    convertFeatures(features) {
+        return Object.entries(features).map(([tag, enabled]) => ({
+            tag: tag,
+            value: enabled ? 1 : 0
+        }));
     }
 
     /**
@@ -194,12 +248,13 @@ export class PdfGenerator {
 
     async ensureFont(fontConfig) {
         if (!fontConfig?.file || !fontConfig?.name) {
-            return;
+            // Return default font
+            return await this.pdfDoc.embedFont(StandardFonts.Helvetica);
         }
 
         const cacheKey = `${fontConfig.name}-${fontConfig.style || 'normal'}`;
         if (this.fontCache[cacheKey]) {
-            return;
+            return this.fontCache[cacheKey];
         }
 
         try {
@@ -208,25 +263,15 @@ export class PdfGenerator {
                 throw new Error(`Failed to load font at ${fontConfig.file}`);
             }
 
-            const buffer = await response.arrayBuffer();
-            const fontData = this.arrayBufferToBase64(buffer);
-            const fileName = `${cacheKey}.ttf`;
-            this.pdf.addFileToVFS(fileName, fontData);
-            this.pdf.addFont(fileName, fontConfig.name, fontConfig.style || 'normal');
-            this.fontCache[cacheKey] = true;
+            const fontBytes = await response.arrayBuffer();
+            const font = await this.pdfDoc.embedFont(fontBytes);
+            this.fontCache[cacheKey] = font;
+            return font;
         } catch (error) {
             console.error('Error loading font:', error);
+            // Return default font on error
+            return await this.pdfDoc.embedFont(StandardFonts.Helvetica);
         }
-    }
-
-    arrayBufferToBase64(buffer) {
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return window.btoa(binary);
     }
 
     /**
@@ -247,7 +292,8 @@ export class PdfGenerator {
     /**
      * Download the PDF
      */
-    download() {
-        this.triggerDownload(this.pdf.output('arraybuffer'));
+    async download() {
+        const pdfBytes = await this.pdfDoc.save();
+        this.triggerDownload(pdfBytes);
     }
 }

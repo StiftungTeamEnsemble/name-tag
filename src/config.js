@@ -1,10 +1,32 @@
-import logoSvgUrl from "../assets/logo.svg?url";
+import logoPdfUrl from "../assets/logo.pdf?url";
 import geistRegularFontUrl from "../assets/fonts/Geist/ttf/Geist-Regular.ttf?url";
 import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriweather-Regular.ttf?url";
 
 /**
  * Label Layout Configuration
  * Defines the structure and styling for name tags
+ * 
+ * OpenType Features:
+ * You can enable/disable OpenType features in the font configuration.
+ * Common features include:
+ * - ss01-ss20: Stylistic Sets (e.g., ss03: true)
+ * - liga: Standard Ligatures (liga: true/false)
+ * - dlig: Discretionary Ligatures
+ * - calt: Contextual Alternates
+ * - smcp: Small Capitals
+ * - c2sc: Capitals to Small Capitals
+ * - onum: Old Style Numerals
+ * - pnum: Proportional Numerals
+ * - tnum: Tabular Numerals
+ * - frac: Fractions
+ * - kern: Kerning
+ * 
+ * Example:
+ * features: {
+ *   ss03: true,    // Enable Stylistic Set 03
+ *   liga: false,   // Disable standard ligatures
+ *   onum: true     // Enable old style numerals
+ * }
  */
 
 export const labelLayouts = {
@@ -22,9 +44,9 @@ export const labelLayouts = {
     elements: [
       {
         type: "image",
-        src: logoSvgUrl,
+        src: logoPdfUrl,
         width: 8,
-        height: 8,
+        height: "auto",
         position: {
           x: 2,
           y: 12.8,
@@ -38,6 +60,9 @@ export const labelLayouts = {
           file: geistRegularFontUrl,
           name: "Geist-Regular",
           style: "normal",
+          features: {
+            ss03: true, // Stylistic Set 03
+          },
         },
         color: "#000000",
         position: {
@@ -77,9 +102,9 @@ export const labelLayouts = {
     elements: [
       {
         type: "image",
-        src: logoSvgUrl,
+        src: logoPdfUrl,
         width: 12,
-        height: 12,
+        height: "auto",
         position: {
           x: 2,
           y: 2,
@@ -93,6 +118,9 @@ export const labelLayouts = {
           file: geistRegularFontUrl,
           name: "Geist-Regular",
           style: "normal",
+          features: {
+            ss03: true, // Stylistic Set 03
+          },
         },
         color: "#000000",
         position: {
@@ -154,9 +182,9 @@ export function createCustomLayout(params) {
     elements: params.elements || [
       {
         type: "image",
-        src: logoSvgUrl,
+        src: logoPdfUrl,
         width: 12,
-        height: 12,
+        height: "auto",
         position: { x: 2, y: 2 },
       },
       {
@@ -167,6 +195,9 @@ export function createCustomLayout(params) {
           file: geistRegularFontUrl,
           name: "Geist-Regular",
           style: "normal",
+          features: {
+            ss03: true, // Stylistic Set 03
+          },
         },
         color: "#000000",
         position: { x: 16, y: 7 },
