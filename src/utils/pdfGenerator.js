@@ -78,25 +78,29 @@ export class PdfGenerator {
         this.pdfDoc = await PDFDocument.create();
         this.pdfDoc.registerFontkit(fontkit);
         
-        this.page = this.pdfDoc.addPage([pageDims.width, pageDims.height]);
-
+        const labelsPerPage = this.layout.labelsX * this.layout.labelsY;
         let labelIndex = 0;
 
-        for (let rowIdx = 0; rowIdx < this.layout.labelsY; rowIdx++) {
-            for (let colIdx = 0; colIdx < this.layout.labelsX; colIdx++) {
-                if (labelIndex >= this.data.length) {
-                    break;
+        // Create pages until all labels are placed
+        while (labelIndex < this.data.length) {
+            this.page = this.pdfDoc.addPage([pageDims.width, pageDims.height]);
+
+            for (let rowIdx = 0; rowIdx < this.layout.labelsY; rowIdx++) {
+                for (let colIdx = 0; colIdx < this.layout.labelsX; colIdx++) {
+                    if (labelIndex >= this.data.length) {
+                        break;
+                    }
+
+                    // Calculate position (pdf-lib uses bottom-left origin, so we need to flip Y)
+                    const x = this.mmToPoints(this.layout.marginLeft + colIdx * (this.layout.labelWidth + this.layout.gapX));
+                    const y = pageDims.height - this.mmToPoints(this.layout.marginTop + rowIdx * (this.layout.labelHeight + this.layout.gapY)) - this.mmToPoints(this.layout.labelHeight);
+
+                    await this.drawLabel(this.data[labelIndex], x, y);
+                    labelIndex++;
                 }
 
-                // Calculate position (pdf-lib uses bottom-left origin, so we need to flip Y)
-                const x = this.mmToPoints(this.layout.marginLeft + colIdx * (this.layout.labelWidth + this.layout.gapX));
-                const y = pageDims.height - this.mmToPoints(this.layout.marginTop + rowIdx * (this.layout.labelHeight + this.layout.gapY)) - this.mmToPoints(this.layout.labelHeight);
-
-                await this.drawLabel(this.data[labelIndex], x, y);
-                labelIndex++;
+                if (labelIndex >= this.data.length) break;
             }
-
-            if (labelIndex >= this.data.length) break;
         }
 
         return await this.pdfDoc.save();
@@ -189,9 +193,14 @@ export class PdfGenerator {
     async drawText(element, item, labelX, labelY, labelHeight) {
         try {
             // Replace template variables
-            const text = element.content
-                .replace('{{name}}', item.name)
-                .replace('{{function}}', item.function);
+            let text = element.content
+                .replace('{{name}}', item.name || '')
+                .replace('{{function}}', item.function || '');
+
+            // Skip rendering if text is empty after replacement
+            if (!text.trim()) {
+                return;
+            }
 
             const textX = labelX + this.mmToPoints(element.position.x);
             // Flip Y coordinate (pdf-lib uses bottom-left origin)
@@ -201,27 +210,103 @@ export class PdfGenerator {
             const hexColor = element.color || '#000000';
             const rgbColor = this.hexToRgb(hexColor);
             const fontSize = element.font.size;
+            const lineHeight = element.font.lineHeight || 1.2;
 
             const font = await this.ensureFont(element.font);
 
-            // Prepare draw options
+            // Check if text should wrap within a width
+            if (element.width) {
+                await this.drawMultilineText(text, textX, textY, element.width, fontSize, lineHeight, font, rgbColor, element.font.features, element.autoSize);
+            } else {
+                // Draw single line text
+                const drawOptions = {
+                    x: textX,
+                    y: textY,
+                    size: fontSize,
+                    font: font,
+                    color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
+                };
+
+                // Add OpenType features if specified
+                if (element.font.features) {
+                    drawOptions.features = this.convertFeatures(element.font.features);
+                }
+
+                this.page.drawText(text, drawOptions);
+            }
+        } catch (error) {
+            console.error('Error drawing text:', error);
+        }
+    }
+
+    /**
+     * Draw multi-line text within a specified width
+     */
+    async drawMultilineText(text, x, y, widthMm, fontSize, lineHeight, font, rgbColor, features, autoSize = false) {
+        const maxWidth = this.mmToPoints(widthMm);
+        let adjustedFontSize = fontSize;
+        
+        // If autoSize is enabled, calculate the scale factor needed
+        if (autoSize) {
+            // Find the longest word or line that won't wrap
+            const words = text.split(' ');
+            let maxWordWidth = 0;
+            
+            for (const word of words) {
+                const wordWidth = font.widthOfTextAtSize(word, fontSize);
+                if (wordWidth > maxWordWidth) {
+                    maxWordWidth = wordWidth;
+                }
+            }
+            
+            // If the longest word exceeds max width, scale down the font
+            if (maxWordWidth > maxWidth) {
+                const scaleFactor = maxWidth / maxWordWidth;
+                adjustedFontSize = fontSize * scaleFactor;
+            }
+        }
+        
+        const lineSpacing = adjustedFontSize * lineHeight;
+        
+        // Split text into words
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+
+        for (const word of words) {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const testWidth = font.widthOfTextAtSize(testLine, adjustedFontSize);
+
+            if (testWidth > maxWidth && currentLine) {
+                // Line is too long, push current line and start new one
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        }
+        
+        // Push the last line
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+
+        // Draw each line
+        for (let i = 0; i < lines.length; i++) {
             const drawOptions = {
-                x: textX,
-                y: textY,
-                size: fontSize,
+                x: x,
+                y: y - (i * lineSpacing),
+                size: adjustedFontSize,
                 font: font,
                 color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
             };
 
             // Add OpenType features if specified
-            if (element.font.features) {
-                drawOptions.features = this.convertFeatures(element.font.features);
+            if (features) {
+                drawOptions.features = this.convertFeatures(features);
             }
 
-            // Draw text
-            this.page.drawText(text, drawOptions);
-        } catch (error) {
-            console.error('Error drawing text:', error);
+            this.page.drawText(lines[i], drawOptions);
         }
     }
 

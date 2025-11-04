@@ -11,17 +11,18 @@ export function parseCSV(content) {
         if (!line.trim()) continue; // Skip empty lines
         
         // Try tab-separated first (TSV format)
-        let parts = line.split('\t').map(p => p.trim()).filter(p => p);
+        let parts = line.split('\t').map(p => p.trim());
         
         // If no tabs, try comma-separated
         if (parts.length === 1) {
-            parts = line.split(',').map(p => p.trim()).filter(p => p);
+            parts = line.split(',').map(p => p.trim());
         }
         
-        if (parts.length >= 2) {
+        // Allow entries with just a name (no function)
+        if (parts.length >= 1 && parts[0]) {
             data.push({
                 name: parts[0],
-                function: parts[1]
+                function: parts[1] || '' // Empty string if no function provided
             });
         }
     }

@@ -15,7 +15,6 @@ const previewTable = document.getElementById("previewTable");
 const previewBody = document.getElementById("previewBody");
 const noPreview = document.getElementById("noPreview");
 const layoutSelect = document.getElementById("layoutSelect");
-const customLayout = document.getElementById("customLayout");
 const generateBtn = document.getElementById("generateBtn");
 const previewPdfBtn = document.getElementById("previewPdfBtn");
 const previewModal = document.getElementById("previewModal");
@@ -150,12 +149,6 @@ window.deleteRow = (index) => {
     displayPreview();
   }
 };
-
-// Layout Selection
-layoutSelect.addEventListener("change", (e) => {
-  const isCustom = e.target.value === "custom";
-  customLayout.style.display = isCustom ? "block" : "none";
-});
 
 // Generate PDF
 generateBtn.addEventListener("click", async () => {

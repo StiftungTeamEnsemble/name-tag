@@ -7,6 +7,14 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * Label Layout Configuration
  * Defines the structure and styling for name tags
  *
+ * Text Elements:
+ * - content: Template string with {{name}} and {{function}} placeholders
+ * - Empty fields will be skipped (no rendering if text is empty)
+ * - width: (optional) Text box width in mm for multi-line text wrapping
+ * - autoSize: (optional) Auto-scale text down to fit within width if any line is too long
+ * - position: { x, y } coordinates in mm
+ * - font.lineHeight: (optional) Line height multiplier (e.g., 1.2 = 120% of font size)
+ *
  * OpenType Features:
  * You can enable/disable OpenType features in the font configuration.
  * Common features include:
@@ -50,7 +58,7 @@ export const labelLayouts = {
         width: 25,
         height: "auto",
         position: {
-          x: 12,
+          x: 10,
           y: 42,
         },
       },
@@ -62,13 +70,16 @@ export const labelLayouts = {
           file: geistSemiBoldFontUrl,
           name: "Geist-SemiBold",
           style: "normal",
+          lineHeight: 1.2, // Line height multiplier (1.2 = 120% of font size)
           features: {
             ss03: true, // Stylistic Set 03
           },
         },
         color: "#000000",
+        width: 56, // Text box width in mm for multi-line wrapping
+        autoSize: true, // Auto-scale text to fit within width if line is too long
         position: {
-          x: 12,
+          x: 10,
           y: 10.5,
         },
       },
@@ -82,72 +93,17 @@ export const labelLayouts = {
           style: "normal",
         },
         color: "#000000",
+        width: 56, // Text box width in mm for multi-line wrapping
+        autoSize: true, // Auto-scale text to fit within width if line is too long
         position: {
-          x: 12,
+          x: 10,
           y: 16,
         },
       },
     ],
   },
 
-  custom: {
-    name: "Custom Layout",
-    paperFormat: "A4",
-    labelsX: 2,
-    labelsY: 10,
-    labelWidth: 100,
-    labelHeight: 30,
-    gapX: 2,
-    gapY: 2,
-    marginLeft: 5,
-    marginTop: 5,
-    showBorder: false, // Set to true for debugging label positioning
-    elements: [
-      {
-        type: "image",
-        src: logoPdfUrl,
-        width: 12,
-        height: "auto",
-        position: {
-          x: 2,
-          y: 2,
-        },
-      },
-      {
-        type: "text",
-        content: "{{name}}",
-        font: {
-          size: 14,
-          file: geistRegularFontUrl,
-          name: "Geist-Regular",
-          style: "normal",
-          features: {
-            ss03: true, // Stylistic Set 03
-          },
-        },
-        color: "#000000",
-        position: {
-          x: 16,
-          y: 10,
-        },
-      },
-      {
-        type: "text",
-        content: "{{function}}",
-        font: {
-          size: 10,
-          file: merriweatherRegularFontUrl,
-          name: "Merriweather-Regular",
-          style: "normal",
-        },
-        color: "#666666",
-        position: {
-          x: 16,
-          y: 18,
-        },
-      },
-    ],
-  },
+
 };
 
 /**
@@ -214,8 +170,11 @@ export function createCustomLayout(params) {
           file: merriweatherRegularFontUrl,
           name: "Merriweather-Regular",
           style: "normal",
+          lineHeight: 1.2, // Line height multiplier
         },
         color: "#666666",
+        width: 96, // Text box width in mm for multi-line wrapping
+        autoSize: true, // Auto-scale text to fit within width if line is too long
         position: { x: 2, y: 25 },
       },
     ],
