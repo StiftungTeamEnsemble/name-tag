@@ -1,11 +1,12 @@
 import logoPdfUrl from "../assets/logo.pdf?url";
 import geistRegularFontUrl from "../assets/fonts/Geist/ttf/Geist-Regular.ttf?url";
+import geistSemiBoldFontUrl from "../assets/fonts/Geist/ttf/Geist-SemiBold.ttf?url";
 import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriweather-Regular.ttf?url";
 
 /**
  * Label Layout Configuration
  * Defines the structure and styling for name tags
- * 
+ *
  * OpenType Features:
  * You can enable/disable OpenType features in the font configuration.
  * Common features include:
@@ -20,7 +21,7 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * - tnum: Tabular Numerals
  * - frac: Fractions
  * - kern: Kerning
- * 
+ *
  * Example:
  * features: {
  *   ss03: true,    // Enable Stylistic Set 03
@@ -41,24 +42,25 @@ export const labelLayouts = {
     gapY: 5,
     marginLeft: 17.5,
     marginTop: 13.5,
+    showBorder: true, // Set to true for debugging label positioning
     elements: [
       {
         type: "image",
         src: logoPdfUrl,
-        width: 8,
+        width: 25,
         height: "auto",
         position: {
-          x: 2,
-          y: 12.8,
+          x: 12,
+          y: 42,
         },
       },
       {
         type: "text",
         content: "{{name}}",
         font: {
-          size: 11,
-          file: geistRegularFontUrl,
-          name: "Geist-Regular",
+          size: 18,
+          file: geistSemiBoldFontUrl,
+          name: "Geist-SemiBold",
           style: "normal",
           features: {
             ss03: true, // Stylistic Set 03
@@ -67,7 +69,7 @@ export const labelLayouts = {
         color: "#000000",
         position: {
           x: 12,
-          y: 8,
+          y: 10.5,
         },
       },
       {
@@ -79,10 +81,10 @@ export const labelLayouts = {
           name: "Merriweather-Regular",
           style: "normal",
         },
-        color: "#444444",
+        color: "#000000",
         position: {
           x: 12,
-          y: 14.5,
+          y: 16,
         },
       },
     ],
@@ -99,6 +101,7 @@ export const labelLayouts = {
     gapY: 2,
     marginLeft: 5,
     marginTop: 5,
+    showBorder: false, // Set to true for debugging label positioning
     elements: [
       {
         type: "image",
@@ -179,6 +182,7 @@ export function createCustomLayout(params) {
     gapY: params.gapY || 2,
     marginLeft: params.marginLeft || 5,
     marginTop: params.marginTop || 5,
+    showBorder: params.showBorder || false, // Set to true for debugging label positioning
     elements: params.elements || [
       {
         type: "image",

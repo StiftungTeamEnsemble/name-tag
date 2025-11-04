@@ -15,7 +15,8 @@ export class PdfGenerator {
             gapX: this.layoutConfig.gapX,
             gapY: this.layoutConfig.gapY,
             marginLeft: this.layoutConfig.marginLeft,
-            marginTop: this.layoutConfig.marginTop
+            marginTop: this.layoutConfig.marginTop,
+            showBorder: this.layoutConfig.showBorder || false
         };
         this.pdfDoc = null;
         this.fontCache = {};
@@ -108,15 +109,17 @@ export class PdfGenerator {
         const labelWidth = this.mmToPoints(this.layout.labelWidth);
         const labelHeight = this.mmToPoints(this.layout.labelHeight);
 
-        // Draw border
-        this.page.drawRectangle({
-            x: x,
-            y: y,
-            width: labelWidth,
-            height: labelHeight,
-            borderColor: rgb(0.78, 0.78, 0.78),
-            borderWidth: 0.5,
-        });
+        // Draw border only if enabled (for debugging)
+        if (this.layout.showBorder) {
+            this.page.drawRectangle({
+                x: x,
+                y: y,
+                width: labelWidth,
+                height: labelHeight,
+                borderColor: rgb(0.78, 0.78, 0.78),
+                borderWidth: 0.5,
+            });
+        }
 
         // Render each element from config
         for (const element of this.layoutConfig.elements) {
