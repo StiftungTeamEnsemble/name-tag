@@ -1,6 +1,7 @@
 import { parseCSV } from "./utils/csvParser.js";
 import { PdfGenerator } from "./utils/pdfGenerator.js";
 import { PdfPreviewManager } from "./utils/pdfPreviewManager.js";
+import { getAvailableLayouts } from "./config.js";
 
 let nameTagData = [];
 let pdfGenerator = null;
@@ -21,6 +22,22 @@ const previewModal = document.getElementById("previewModal");
 const closePreview = document.getElementById("closePreview");
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
+
+// Populate layout dropdown
+function populateLayoutDropdown() {
+  const layouts = getAvailableLayouts();
+  layoutSelect.innerHTML = "";
+  
+  layouts.forEach((layout) => {
+    const option = document.createElement("option");
+    option.value = layout.value;
+    option.textContent = layout.label;
+    layoutSelect.appendChild(option);
+  });
+}
+
+// Initialize
+populateLayoutDropdown();
 
 // Tab switching
 tabButtons.forEach((btn) => {

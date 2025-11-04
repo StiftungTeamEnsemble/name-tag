@@ -7,13 +7,57 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * Label Layout Configuration
  * Defines the structure and styling for name tags
  *
- * Text Elements:
+ * Element Types:
+ * 
+ * 1. Image Element:
+ * - src: URL or path to the image/PDF
+ * - width: Width in mm
+ * - height: Height in mm or "auto" for aspect ratio
+ * - position: { x, y } coordinates in mm
+ *
+ * 2. Text Element:
  * - content: Template string with {{name}} and {{function}} placeholders
  * - Empty fields will be skipped (no rendering if text is empty)
  * - width: (optional) Text box width in mm for multi-line text wrapping
  * - autoSize: (optional) Auto-scale text down to fit within width if any line is too long
  * - position: { x, y } coordinates in mm
  * - font.lineHeight: (optional) Line height multiplier (e.g., 1.2 = 120% of font size)
+ * - topPadding: (optional, story children only) Padding above text in mm
+ * - bottomPadding: (optional, story children only) Padding below text in mm
+ *
+ * 3. Story Element:
+ * - type: "story"
+ * - position: { x, y } starting coordinates in mm
+ * - children: Array of text elements (only text type allowed)
+ * - Children are rendered sequentially like HTML blocks (ignoring their individual position)
+ * - Children support topPadding and bottomPadding for spacing
+ *
+ * Example Story Element:
+ * {
+ *   type: "story",
+ *   position: { x: 10, y: 10 },
+ *   children: [
+ *     {
+ *       type: "text",
+ *       content: "{{name}}",
+ *       topPadding: 2,
+ *       bottomPadding: 3,
+ *       font: { size: 18, file: geistSemiBoldFontUrl, name: "Geist-SemiBold", style: "normal" },
+ *       color: "#000000",
+ *       width: 60,
+ *       autoSize: true
+ *     },
+ *     {
+ *       type: "text",
+ *       content: "{{function}}",
+ *       topPadding: 1,
+ *       bottomPadding: 2,
+ *       font: { size: 10, file: merriweatherRegularFontUrl, name: "Merriweather-Regular", style: "normal" },
+ *       color: "#666666",
+ *       width: 60
+ *     }
+ *   ]
+ * }
  *
  * OpenType Features:
  * You can enable/disable OpenType features in the font configuration.
@@ -99,6 +143,76 @@ export const labelLayouts = {
           x: 10,
           y: 16,
         },
+      },
+    ],
+  },
+
+  "zweckform-L4785-20-story": {
+    name: "Zweckform L4785-20 (Story Example)",
+    paperFormat: "A4",
+    labelsX: 2,
+    labelsY: 5,
+    labelWidth: 80,
+    labelHeight: 50,
+    gapX: 15,
+    gapY: 5,
+    marginLeft: 17.5,
+    marginTop: 13.5,
+    showBorder: true, // Set to true for debugging label positioning
+    elements: [
+      {
+        type: "image",
+        src: logoPdfUrl,
+        width: 25,
+        height: "auto",
+        position: {
+          x: 10,
+          y: 42,
+        },
+      },
+      {
+        type: "story",
+        position: {
+          x: 10,
+          y: 10.5,
+        },
+        children: [
+          {
+            type: "text",
+            content: "{{name}}",
+            topPadding: 0,
+            bottomPadding: 1,
+            font: {
+              size: 18,
+              file: geistSemiBoldFontUrl,
+              name: "Geist-SemiBold",
+              style: "normal",
+              lineHeight: 1.2,
+              features: {
+                ss03: true,
+              },
+            },
+            color: "#000000",
+            width: 56,
+            autoSize: true,
+          },
+          {
+            type: "text",
+            content: "{{function}}",
+            topPadding: 0,
+            bottomPadding: 0,
+            font: {
+              size: 8,
+              file: merriweatherRegularFontUrl,
+              name: "Merriweather-Regular",
+              style: "normal",
+              lineHeight: 1.2,
+            },
+            color: "#000000",
+            width: 56,
+            autoSize: true,
+          },
+        ],
       },
     ],
   },
