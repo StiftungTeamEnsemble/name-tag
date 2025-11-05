@@ -20,12 +20,20 @@
             <h2>1. Namen & Funktionen hinzufügen</h2>
 
             <div class="input-tabs">
-              <button class="tab-btn active" data-tab="csv">CSV-Upload</button>
-              <button class="tab-btn" data-tab="manual">Manuelle Eingabe</button>
+              <button class="tab-btn active" data-tab="manual">Manuelle Eingabe</button>
+              <button class="tab-btn" data-tab="csv">CSV-Upload</button>
+            </div>
+
+            <!-- Manual Input -->
+            <div id="manual-tab" class="tab-content active">
+              <textarea
+                id="manualInput"
+                placeholder="Namen und Funktionen eingeben&#10;Format: Name[TAB]Funktion&#10;&#10;Beispiel:&#10;Max Mustermann	Direktor&#10;Erika Musterfrau	Managerin"
+              ></textarea>
             </div>
 
             <!-- CSV Upload -->
-            <div id="csv-tab" class="tab-content active">
+            <div id="csv-tab" class="tab-content">
               <div class="upload-area" id="dropZone">
                 <svg
                   class="upload-icon"
@@ -43,13 +51,6 @@
               </div>
             </div>
 
-            <!-- Manual Input -->
-            <div id="manual-tab" class="tab-content">
-              <textarea
-                id="manualInput"
-                placeholder="Namen und Funktionen eingeben&#10;Format: Name[TAB]Funktion&#10;&#10;Beispiel:&#10;Max Mustermann	Direktor&#10;Erika Musterfrau	Managerin"
-              ></textarea>
-            </div>
 
             <button id="parseBtn" class="btn btn-primary">Daten verarbeiten</button>
           </div>

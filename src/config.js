@@ -70,10 +70,10 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * OpenType Features:
  * NOTE: OpenType features are currently NOT supported by pdf-lib.
  * The features configuration is preserved for future implementation but will not affect rendering.
- * 
+ *
  * To use OpenType features, you would need to use a font file that has the features
  * applied by default, or use a different PDF generation library that supports fontkit text shaping.
- * 
+ *
  * Common OpenType features include:
  * - ss01-ss20: Stylistic Sets (e.g., ss03: true)
  * - liga: Standard Ligatures (liga: true/false)
@@ -107,7 +107,7 @@ export const labelLayouts = {
     gapY: 5,
     marginLeft: 17.5,
     marginTop: 13.5,
-    showBorder: true, // Set to true for debugging label positioning
+    showBorder: false, // Set to true for debugging label positioning
     elements: [
       {
         type: "image",
@@ -165,6 +165,11 @@ export const labelLayouts = {
       },
     ],
   },
+};
+labelLayouts["zweckform-L4785-20-debug"] = {
+  ...labelLayouts["zweckform-L4785-20"],
+  name: "Zweckform L4785-20 (liniert)",
+  showBorder: true,
 };
 
 /**
