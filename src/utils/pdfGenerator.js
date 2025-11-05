@@ -20,6 +20,7 @@ export class PdfGenerator {
     };
     this.pdfDoc = null;
     this.fontCache = {};
+    this.imageCache = {};
     this.page = null;
   }
 
@@ -27,7 +28,7 @@ export class PdfGenerator {
    * Get page dimensions in points (pdf-lib uses points: 1mm = 2.834645669291339 points)
    */
   mmToPoints(mm) {
-    return mm * 2.834645669291339;
+    return mm * (72 / 25.4); // 1 inch = 25.4 mm, 1 inch = 72 points
   }
 
   getPageDimensions(format) {
@@ -160,12 +161,22 @@ export class PdfGenerator {
       const imgY = labelY + labelHeight - this.mmToPoints(element.position.y);
       const imgWidth = this.mmToPoints(element.width);
 
-      // Load PDF
-      const pdfData = await this.loadPdf(element.src);
-      if (pdfData) {
-        const logoPdf = await PDFDocument.load(pdfData);
-        const [logoPage] = await this.pdfDoc.embedPdf(logoPdf, [0]);
+      // Check cache first
+      let logoPage;
+      if (this.imageCache[element.src]) {
+        logoPage = this.imageCache[element.src];
+      } else {
+        // Load PDF
+        const pdfData = await this.loadPdf(element.src);
+        if (pdfData) {
+          const logoPdf = await PDFDocument.load(pdfData);
+          [logoPage] = await this.pdfDoc.embedPdf(logoPdf, [0]);
+          // Cache the embedded page
+          this.imageCache[element.src] = logoPage;
+        }
+      }
 
+      if (logoPage) {
         // Calculate height maintaining aspect ratio if "auto"
         let imgHeight;
         if (element.height === "auto") {
