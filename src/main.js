@@ -27,7 +27,7 @@ const tabContents = document.querySelectorAll(".tab-content");
 function populateLayoutDropdown() {
   const layouts = getAvailableLayouts();
   layoutSelect.innerHTML = "";
-  
+
   layouts.forEach((layout) => {
     const option = document.createElement("option");
     option.value = layout.value;

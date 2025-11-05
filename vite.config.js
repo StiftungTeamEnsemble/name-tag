@@ -1,12 +1,12 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: '/name-tag/',
+  base: "/name-tag/",
   build: {
-    outDir: 'dist',
+    outDir: "dist",
     emptyOutDir: true,
   },
   server: {
     port: 5173,
-  }
-})
+  },
+});

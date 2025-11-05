@@ -4,28 +4,28 @@
  * @returns {Array} Array of {name, function} objects
  */
 export function parseCSV(content) {
-    const lines = content.trim().split('\n');
-    const data = [];
-    
-    for (const line of lines) {
-        if (!line.trim()) continue; // Skip empty lines
-        
-        // Try tab-separated first (TSV format)
-        let parts = line.split('\t').map(p => p.trim());
-        
-        // If no tabs, try comma-separated
-        if (parts.length === 1) {
-            parts = line.split(',').map(p => p.trim());
-        }
-        
-        // Allow entries with just a name (no function)
-        if (parts.length >= 1 && parts[0]) {
-            data.push({
-                name: parts[0],
-                function: parts[1] || '' // Empty string if no function provided
-            });
-        }
+  const lines = content.trim().split("\n");
+  const data = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue; // Skip empty lines
+
+    // Try tab-separated first (TSV format)
+    let parts = line.split("\t").map((p) => p.trim());
+
+    // If no tabs, try comma-separated
+    if (parts.length === 1) {
+      parts = line.split(",").map((p) => p.trim());
     }
-    
-    return data;
+
+    // Allow entries with just a name (no function)
+    if (parts.length >= 1 && parts[0]) {
+      data.push({
+        name: parts[0],
+        function: parts[1] || "", // Empty string if no function provided
+      });
+    }
+  }
+
+  return data;
 }

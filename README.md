@@ -32,17 +32,20 @@ A modern web application for generating professional PDF name tags from CSV data
 ### Setup
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/StiftungTeamEnsemble/name-tag.git
 cd name-tag
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Start development server:
+
 ```bash
 npm run dev
 ```
@@ -54,10 +57,12 @@ npm run dev
 ### Input Data
 
 #### CSV Upload
+
 1. Click the upload area or drag and drop a CSV file
 2. Format: `Name[TAB]Function` (tab-separated) or `Name,Function` (comma-separated)
 
 #### Manual Input
+
 1. Switch to "Manual Input" tab
 2. Enter data in the text area, one entry per line
 3. Use TAB to separate name and function
@@ -74,6 +79,7 @@ npm run dev
 ### Predefined Layouts
 
 #### Zweckform L4785-20
+
 - Labels per page: 80 (4 columns × 20 rows)
 - Label size: 52.5 × 21.2 mm
 - Paper format: A4
@@ -137,6 +143,7 @@ name-tag/
 ### Automatic Deployment
 
 Every push to the `main` branch automatically:
+
 1. Builds the project
 2. Generates optimized production files
 3. Deploys to GitHub Pages at `https://username.github.io/name-tag/`
@@ -151,6 +158,7 @@ npm run deploy
 ## CSV Format Examples
 
 ### Tab-Separated (Recommended)
+
 ```
 John Doe	CEO
 Jane Smith	Manager
@@ -158,6 +166,7 @@ Bob Johnson	Developer
 ```
 
 ### Comma-Separated
+
 ```
 John Doe,CEO
 Jane Smith,Manager
@@ -200,24 +209,27 @@ All styles are in `src/styles.css` and use CSS custom properties for easy themin
 
 ```css
 :root {
-    --primary-color: #2563eb;
-    --success-color: #16a34a;
-    --danger-color: #dc2626;
-    /* ... more colors ... */
+  --primary-color: #2563eb;
+  --success-color: #16a34a;
+  --danger-color: #dc2626;
+  /* ... more colors ... */
 }
 ```
 
 ## Troubleshooting
 
 ### PDF not previewing
+
 - Ensure PDF.js is properly loaded (check browser console)
 - Try downloading instead of previewing
 
 ### Labels not centered
+
 - Check "Start Left" and "Start Top" margins
 - Verify label dimensions match your physical labels
 
 ### CSV not parsing
+
 - Ensure file uses UTF-8 encoding
 - Check separator (TAB or comma) consistency
 - Verify no extra spaces in data
