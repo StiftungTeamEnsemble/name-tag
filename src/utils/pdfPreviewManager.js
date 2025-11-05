@@ -130,7 +130,7 @@ export class PdfPreviewManager {
   updatePageInfo() {
     const info = document.getElementById("pageInfo");
     if (info && this.pdfDoc) {
-      info.textContent = `Page ${this.currentPage} of ${this.pdfDoc.numPages}`;
+      info.textContent = `Seite ${this.currentPage} von ${this.pdfDoc.numPages}`;
 
       // Update button states
       document.getElementById("prevPageBtn").disabled = this.currentPage <= 1;
