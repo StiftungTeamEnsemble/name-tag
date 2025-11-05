@@ -1,9 +1,10 @@
 /**
  * Parse CSV or tab-separated data into name tag entries
  * @param {string} content - The CSV/TSV content
- * @returns {Array} Array of {name, function} objects
+ * @param {string} format - Format type: 'name-vorname-funktion', 'vorname-name-funktion', or 'name-funktion'
+ * @returns {Array} Array of {vorname, name, function} objects, sorted alphabetically by name
  */
-export function parseCSV(content) {
+export function parseCSV(content, format = "name-vorname-funktion") {
   const lines = content.trim().split("\n");
   const data = [];
 
@@ -18,14 +19,50 @@ export function parseCSV(content) {
       parts = line.split(",").map((p) => p.trim());
     }
 
-    // Allow entries with just a name (no function)
-    if (parts.length >= 1 && parts[0]) {
-      data.push({
-        name: parts[0],
-        function: parts[1] || "", // Empty string if no function provided
-      });
+    let entry = { vorname: "", name: "", function: "" };
+
+    // Parse according to selected format
+    switch (format) {
+      case "name-vorname-funktion":
+        // Name[TAB]Vorname[TAB]Funktion(optional)
+        if (parts.length >= 1 && parts[0]) {
+          entry.name = parts[0];
+          entry.vorname = parts[1] || "";
+          entry.function = parts[2] || "";
+        }
+        break;
+
+      case "vorname-name-funktion":
+        // Vorname[TAB]Name[TAB]Funktion(optional)
+        if (parts.length >= 1 && parts[0]) {
+          entry.vorname = parts[0];
+          entry.name = parts[1] || "";
+          entry.function = parts[2] || "";
+        }
+        break;
+
+      case "name-funktion":
+        // Name[TAB]Funktion (no Vorname in this format)
+        if (parts.length >= 1 && parts[0]) {
+          entry.name = parts[0];
+          entry.vorname = "";
+          entry.function = parts[1] || "";
+        }
+        break;
+    }
+
+    // Only add if at least name or vorname exists
+    if (entry.name || entry.vorname) {
+      data.push(entry);
     }
   }
+
+  // Sort alphabetically by name (case-insensitive)
+  data.sort((a, b) => {
+    const nameA = a.name.toLowerCase();
+    const nameB = b.name.toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
 
   return data;
 }

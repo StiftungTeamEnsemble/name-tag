@@ -21,7 +21,7 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * - position: { x, y } coordinates in mm (top-left corner)
  *
  * 2. Text Element:
- * - content: Template string with {{name}} and {{function}} placeholders
+ * - content: Template string with {{displayName}} and {{function}} placeholders
  * - Empty fields will be skipped (no rendering if text is empty)
  * - width: (optional) Text box width in mm for multi-line text wrapping
  * - autoSize: (optional) Auto-scale text down to fit within width if any line is too long
@@ -47,7 +47,7 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  *   children: [
  *     {
  *       type: "text",
- *       content: "{{name}}",
+ *       content: "{{displayName}}",
  *       topPadding: 2,      // Extra space above this block
  *       bottomPadding: 3,   // Extra space below this block
  *       font: { size: 18, file: geistSemiBoldFontUrl, name: "Geist-SemiBold", style: "normal", lineHeight: 1.2 },
@@ -128,7 +128,7 @@ export const labelLayouts = {
         children: [
           {
             type: "text",
-            content: "{{name}}",
+            content: "{{displayName}}",
             topPadding: 0,
             bottomPadding: 0,
             font: {
@@ -215,7 +215,7 @@ export function createCustomLayout(params) {
       },
       {
         type: "text",
-        content: "{{name}}",
+        content: "{{displayName}}",
         font: {
           size: 14,
           file: geistRegularFontUrl,

@@ -228,8 +228,11 @@ export class PdfGenerator {
   ) {
     try {
       // Replace template variables
+      const displayName = `${item.vorname || ""} ${item.name || ""}`.trim();
       let text = element.content
         .replace("{{name}}", item.name || "")
+        .replace("{{displayName}}", displayName)
+        .replace("{{vorname}}", item.vorname || "")
         .replace("{{function}}", item.function || "");
 
       // Skip rendering if text is empty after replacement

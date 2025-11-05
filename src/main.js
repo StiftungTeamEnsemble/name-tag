@@ -11,6 +11,8 @@ let pdfPreviewManager = null;
 const csvFile = document.getElementById("csvFile");
 const dropZone = document.getElementById("dropZone");
 const manualInput = document.getElementById("manualInput");
+const formatSelect = document.getElementById("formatSelect");
+const formatHint = document.getElementById("formatHint");
 const parseBtn = document.getElementById("parseBtn");
 const previewTable = document.getElementById("previewTable");
 const previewBody = document.getElementById("previewBody");
@@ -38,6 +40,37 @@ function populateLayoutDropdown() {
 
 // Initialize
 populateLayoutDropdown();
+
+// Update placeholder text based on format selection
+function updatePlaceholders() {
+  const format = formatSelect.value;
+  const placeholders = {
+    "name-vorname-funktion": {
+      manual:
+        "Namen und Funktionen eingeben\nFormat: Name[TAB]Vorname[TAB]Funktion\n\nBeispiel:\nMustermann\tMax\tDirektor\nMusterfrau\tErika\tManagerin",
+      hint: "Format: Name[TAB]Vorname[TAB]Funktion (optional)",
+    },
+    "vorname-name-funktion": {
+      manual:
+        "Namen und Funktionen eingeben\nFormat: Vorname[TAB]Name[TAB]Funktion\n\nBeispiel:\nMax\tMustermann\tDirektor\nErika\tMusterfrau\tManagerin",
+      hint: "Format: Vorname[TAB]Name[TAB]Funktion (optional)",
+    },
+    "name-funktion": {
+      manual:
+        "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion\n\nBeispiel:\nMustermann\tDirektor\nMusterfrau\tManagerin",
+      hint: "Format: Name[TAB]Funktion (optional)",
+    },
+  };
+
+  manualInput.placeholder = placeholders[format].manual;
+  formatHint.textContent = placeholders[format].hint;
+}
+
+// Initialize placeholders
+updatePlaceholders();
+
+// Listen for format changes
+formatSelect.addEventListener("change", updatePlaceholders);
 
 // Tab switching
 tabButtons.forEach((btn) => {
@@ -88,7 +121,8 @@ function loadCSVFile() {
   const reader = new FileReader();
   reader.onload = (e) => {
     const content = e.target.result;
-    parseAndDisplayData(content);
+    const format = formatSelect.value;
+    parseAndDisplayData(content, format);
   };
   reader.readAsText(file);
 }
@@ -96,6 +130,7 @@ function loadCSVFile() {
 // Parse Button
 parseBtn.addEventListener("click", () => {
   const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
+  const format = formatSelect.value;
 
   let content = "";
   if (activeTab === "csv") {
@@ -107,7 +142,7 @@ parseBtn.addEventListener("click", () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       content = e.target.result;
-      parseAndDisplayData(content);
+      parseAndDisplayData(content, format);
     };
     reader.readAsText(file);
   } else {
@@ -116,16 +151,18 @@ parseBtn.addEventListener("click", () => {
       showError("Bitte geben Sie Daten in das Textfeld ein");
       return;
     }
-    parseAndDisplayData(content);
+    parseAndDisplayData(content, format);
   }
 });
 
-function parseAndDisplayData(content) {
+function parseAndDisplayData(content, format) {
   try {
-    nameTagData = parseCSV(content);
+    nameTagData = parseCSV(content, format);
 
     if (nameTagData.length === 0) {
-      showError("Keine gültigen Daten gefunden. Format: Name[TAB]Funktion");
+      showError(
+        "Keine gültigen Daten gefunden. Bitte überprüfen Sie das Format.",
+      );
       return;
     }
 
@@ -143,8 +180,9 @@ function displayPreview() {
 
   nameTagData.forEach((item, index) => {
     const row = document.createElement("tr");
+    const displayName = `${item.vorname} ${item.name}`.trim();
     row.innerHTML = `
-            <td>${escapeHtml(item.name)}</td>
+            <td>${escapeHtml(displayName)}</td>
             <td>${escapeHtml(item.function)}</td>
             <td><button class="delete-btn" onclick="deleteRow(${index})">Löschen</button></td>
         `;
