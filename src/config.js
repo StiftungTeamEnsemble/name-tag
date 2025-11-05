@@ -68,8 +68,13 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * }
  *
  * OpenType Features:
- * You can enable/disable OpenType features in the font configuration.
- * Common features include:
+ * NOTE: OpenType features are currently NOT supported by pdf-lib.
+ * The features configuration is preserved for future implementation but will not affect rendering.
+ * 
+ * To use OpenType features, you would need to use a font file that has the features
+ * applied by default, or use a different PDF generation library that supports fontkit text shaping.
+ * 
+ * Common OpenType features include:
  * - ss01-ss20: Stylistic Sets (e.g., ss03: true)
  * - liga: Standard Ligatures (liga: true/false)
  * - dlig: Discretionary Ligatures
@@ -82,7 +87,7 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * - frac: Fractions
  * - kern: Kerning
  *
- * Example:
+ * Example (not currently functional):
  * features: {
  *   ss03: true,    // Enable Stylistic Set 03
  *   liga: false,   // Disable standard ligatures
@@ -143,7 +148,7 @@ export const labelLayouts = {
           {
             type: "text",
             content: "{{function}}",
-            topPadding: 5,
+            topPadding: 4,
             bottomPadding: 0,
             font: {
               size: 8,

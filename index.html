@@ -3,25 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Name Tag PDF Generator</title>
+    <title>Team Ensemble Namensschilder</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <div class="container">
       <header>
-        <h1>Name Tag PDF Generator</h1>
-        <p>Create professional name tags from CSV or manual input</p>
+        <h1>Team Ensemble Namensschilder</h1>
+        <p>Erstelle Namensschilder aus CSV- oder manueller Eingabe</p>
       </header>
 
       <main>
         <div class="form-section">
           <!-- Input Section -->
           <div class="input-section">
-            <h2>1. Add Names & Functions</h2>
+            <h2>1. Namen & Funktionen hinzufügen</h2>
 
             <div class="input-tabs">
-              <button class="tab-btn active" data-tab="csv">CSV Upload</button>
-              <button class="tab-btn" data-tab="manual">Manual Input</button>
+              <button class="tab-btn active" data-tab="csv">CSV-Upload</button>
+              <button class="tab-btn" data-tab="manual">Manuelle Eingabe</button>
             </div>
 
             <!-- CSV Upload -->
@@ -37,8 +37,8 @@
                   <polyline points="17 8 12 3 7 8"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
-                <p>Drag & drop CSV file or click to select</p>
-                <small>Format: Name[TAB]Function</small>
+                <p>CSV-Datei hierher ziehen oder klicken zum Auswählen</p>
+                <small>Format: Name[TAB]Funktion</small>
                 <input type="file" id="csvFile" accept=".csv" hidden />
               </div>
             </div>
@@ -47,37 +47,37 @@
             <div id="manual-tab" class="tab-content">
               <textarea
                 id="manualInput"
-                placeholder="Enter names and functions&#10;Format: Name[TAB]Function&#10;&#10;Example:&#10;John Doe	Director&#10;Jane Smith	Manager"
+                placeholder="Namen und Funktionen eingeben&#10;Format: Name[TAB]Funktion&#10;&#10;Beispiel:&#10;Max Mustermann	Direktor&#10;Erika Musterfrau	Managerin"
               ></textarea>
             </div>
 
-            <button id="parseBtn" class="btn btn-primary">Parse Data</button>
+            <button id="parseBtn" class="btn btn-primary">Daten verarbeiten</button>
           </div>
 
           <!-- Preview Section -->
           <div class="preview-section">
-            <h2>2. Preview Data</h2>
+            <h2>2. Datenvorschau</h2>
             <div id="previewTable" class="preview-table" style="display: none">
               <table>
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Function</th>
-                    <th>Action</th>
+                    <th>Funktion</th>
+                    <th>Aktion</th>
                   </tr>
                 </thead>
                 <tbody id="previewBody"></tbody>
               </table>
             </div>
-            <div id="noPreview" class="no-preview">No data loaded yet</div>
+            <div id="noPreview" class="no-preview">Noch keine Daten geladen</div>
           </div>
 
           <!-- Layout Section -->
           <div class="layout-section">
-            <h2>3. Select Layout</h2>
+            <h2>3. Layout auswählen</h2>
 
             <div class="layout-selector">
-              <label for="layoutSelect">Predefined Layout:</label>
+              <label for="layoutSelect">Vordefiniertes Layout:</label>
               <select id="layoutSelect">
                 <!-- Options populated dynamically from config.js -->
               </select>
@@ -87,10 +87,10 @@
           <!-- Generate Section -->
           <div class="generate-section">
             <button id="generateBtn" class="btn btn-success" disabled>
-              Generate PDF
+              PDF generieren
             </button>
             <button id="previewPdfBtn" class="btn btn-secondary" disabled>
-              Preview PDF
+              PDF-Vorschau
             </button>
           </div>
         </div>
@@ -99,27 +99,33 @@
         <div id="previewModal" class="modal" style="display: none">
           <div class="modal-content">
             <div class="modal-header">
-              <h2>PDF Preview</h2>
+              <h2>PDF-Vorschau</h2>
               <button class="close-btn" id="closePreview">&times;</button>
             </div>
             <div class="modal-body">
               <div id="pdfViewer"></div>
               <div id="pdfControls">
                 <div class="control-group">
-                  <button id="zoomOutBtn" title="Zoom Out">−</button>
-                  <button id="zoomResetBtn" title="Reset Zoom">100%</button>
-                  <button id="zoomInBtn" title="Zoom In">+</button>
+                  <button id="zoomOutBtn" title="Verkleinern">−</button>
+                  <button id="zoomResetBtn" title="Zoom zurücksetzen">100%</button>
+                  <button id="zoomInBtn" title="Vergrößern">+</button>
                 </div>
                 <div class="control-separator"></div>
                 <div class="control-group">
-                  <button id="prevPageBtn" title="Previous Page">◄ Previous</button>
+                  <button id="prevPageBtn" title="Vorherige Seite">
+                    ◄ Zurück
+                  </button>
                   <span id="pageInfo"></span>
-                  <button id="nextPageBtn" title="Next Page">Next ►</button>
+                  <button id="nextPageBtn" title="Nächste Seite">Weiter ►</button>
                 </div>
                 <div class="control-separator"></div>
                 <div class="control-group">
-                  <button id="downloadPdfBtn" class="btn btn-success" title="Download PDF">
-                    Download PDF
+                  <button
+                    id="downloadPdfBtn"
+                    class="btn btn-success"
+                    title="PDF herunterladen"
+                  >
+                    PDF herunterladen
                   </button>
                 </div>
               </div>

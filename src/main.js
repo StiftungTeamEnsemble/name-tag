@@ -100,7 +100,7 @@ parseBtn.addEventListener("click", () => {
   let content = "";
   if (activeTab === "csv") {
     if (!csvFile.files.length) {
-      showError("Please select a CSV file");
+      showError("Bitte wählen Sie eine CSV-Datei aus");
       return;
     }
     const file = csvFile.files[0];
@@ -113,7 +113,7 @@ parseBtn.addEventListener("click", () => {
   } else {
     content = manualInput.value.trim();
     if (!content) {
-      showError("Please enter data in the text field");
+      showError("Bitte geben Sie Daten in das Textfeld ein");
       return;
     }
     parseAndDisplayData(content);
@@ -125,16 +125,16 @@ function parseAndDisplayData(content) {
     nameTagData = parseCSV(content);
 
     if (nameTagData.length === 0) {
-      showError("No valid data found. Make sure format is: Name[TAB]Function");
+      showError("Keine gültigen Daten gefunden. Format: Name[TAB]Funktion");
       return;
     }
 
     displayPreview();
     generateBtn.disabled = false;
     previewPdfBtn.disabled = false;
-    showSuccess(`Loaded ${nameTagData.length} name tags`);
+    showSuccess(`${nameTagData.length} Namensschilder geladen`);
   } catch (error) {
-    showError(`Error parsing data: ${error.message}`);
+    showError(`Fehler beim Verarbeiten der Daten: ${error.message}`);
   }
 }
 
@@ -146,7 +146,7 @@ function displayPreview() {
     row.innerHTML = `
             <td>${escapeHtml(item.name)}</td>
             <td>${escapeHtml(item.function)}</td>
-            <td><button class="delete-btn" onclick="deleteRow(${index})">Delete</button></td>
+            <td><button class="delete-btn" onclick="deleteRow(${index})">Löschen</button></td>
         `;
     previewBody.appendChild(row);
   });
@@ -170,7 +170,7 @@ window.deleteRow = (index) => {
 // Generate PDF
 generateBtn.addEventListener("click", async () => {
   if (nameTagData.length === 0) {
-    showError("No data to generate PDF");
+    showError("Keine Daten zum Generieren vorhanden");
     return;
   }
 
@@ -179,16 +179,16 @@ generateBtn.addEventListener("click", async () => {
 
   try {
     await pdfGenerator.generate();
-    showSuccess("PDF generated successfully!");
+    showSuccess("PDF erfolgreich generiert!");
   } catch (error) {
-    showError(`Error generating PDF: ${error.message}`);
+    showError(`Fehler beim Generieren des PDFs: ${error.message}`);
   }
 });
 
 // Preview PDF
 previewPdfBtn.addEventListener("click", async () => {
   if (nameTagData.length === 0) {
-    showError("No data to preview");
+    showError("Keine Daten für Vorschau vorhanden");
     return;
   }
 
@@ -203,7 +203,7 @@ previewPdfBtn.addEventListener("click", async () => {
     previewModal.classList.add("show");
     await pdfPreviewManager.renderPage(1);
   } catch (error) {
-    showError(`Error previewing PDF: ${error.message}`);
+    showError(`Fehler bei der PDF-Vorschau: ${error.message}`);
   }
 });
 
@@ -286,7 +286,7 @@ document.getElementById("zoomResetBtn").addEventListener("click", async () => {
 document.getElementById("downloadPdfBtn").addEventListener("click", () => {
   if (pdfGenerator) {
     pdfGenerator.download();
-    showSuccess("PDF downloaded!");
+    showSuccess("PDF heruntergeladen!");
   }
 });
 

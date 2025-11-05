@@ -256,9 +256,10 @@ export class PdfGenerator {
                     color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
                 };
 
-                // Add OpenType features if specified
+                // Note: pdf-lib doesn't support OpenType features directly
+                // Features would need to be implemented using fontkit text shaping
                 if (element.font.features) {
-                    drawOptions.features = this.convertFeatures(element.font.features);
+                    console.warn('OpenType features are not currently supported by pdf-lib. Features specified:', element.font.features);
                 }
 
                 this.page.drawText(text, drawOptions);
@@ -397,28 +398,14 @@ export class PdfGenerator {
                 color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
             };
 
-            // Add OpenType features if specified
-            if (features) {
-                drawOptions.features = this.convertFeatures(features);
-            }
+            // Note: pdf-lib doesn't support OpenType features directly
+            // Would need fontkit text shaping for feature support
 
             this.page.drawText(lines[i], drawOptions);
         }
 
         // Return total height consumed (number of lines * totalLineHeight)
         return lines.length * totalLineHeight;
-    }
-
-    /**
-     * Convert feature object to array format for pdf-lib
-     * OpenType features like { ss03: true, liga: false } 
-     * become [{ tag: 'ss03', value: 1 }, { tag: 'liga', value: 0 }]
-     */
-    convertFeatures(features) {
-        return Object.entries(features).map(([tag, enabled]) => ({
-            tag: tag,
-            value: enabled ? 1 : 0
-        }));
     }
 
     /**
