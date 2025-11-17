@@ -171,6 +171,14 @@ labelLayouts["zweckform-L4785-20-debug"] = {
   name: "Zweckform L4785-20 (liniert)",
   showBorder: true,
 };
+labelLayouts["zweckform-L4785-20-no-logo"] = {
+  ...labelLayouts["zweckform-L4785-20"],
+  name: "Zweckform L4785-20 (ohne Logo)",
+  elements: labelLayouts["zweckform-L4785-20"].elements.filter(
+    (el) => el.type !== "image",
+  ),
+  showBorder: true,
+};
 
 /**
  * Get layout configuration by name
