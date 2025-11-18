@@ -29,7 +29,7 @@ export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
           entry.name = parts[0];
           entry.vorname = parts[1] || "";
           entry.function = parts[2] || "";
-          entry.zusatz = parts[3] || "";
+          entry.addition = parts[3] || "";
         }
         break;
 
@@ -39,7 +39,7 @@ export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
           entry.vorname = parts[0];
           entry.name = parts[1] || "";
           entry.function = parts[2] || "";
-          entry.zusatz = parts[3] || "";
+          entry.addition = parts[3] || "";
         }
         break;
 
@@ -49,7 +49,7 @@ export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
           entry.name = parts[0];
           entry.vorname = "";
           entry.function = parts[1] || "";
-          entry.zusatz = parts[2] || "";
+          entry.addition = parts[2] || "";
         }
         break;
     }

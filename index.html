@@ -20,18 +20,16 @@
             <h2>1. Namen & Funktionen hinzufügen</h2>
 
             <div class="input-tabs">
-              <button class="tab-btn active" data-tab="manual">Manuelle Eingabe</button>
+              <button class="tab-btn active" data-tab="manual">
+                Manuelle Eingabe
+              </button>
               <button class="tab-btn" data-tab="csv">CSV-Upload</button>
             </div>
 
             <!-- Format Selection -->
             <div class="format-selector">
               <label for="formatSelect">Datenformat:</label>
-              <select id="formatSelect">
-                <option value="vorname-name-funktion-zusatz">Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz (beide optional)</option>
-                <option value="name-vorname-funktion-zusatz">Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide optional)</option>
-                <option value="name-funktion-zusatz">Name[TAB]Funktion[TAB]Zusatz (beide optional)</option>
-              </select>
+              <select id="formatSelect"></select>
             </div>
 
             <!-- Manual Input -->
@@ -56,13 +54,17 @@
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
                 <p>CSV-Datei hierher ziehen oder klicken zum Auswählen</p>
-                <small id="formatHint">Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide optional)</small>
+                <small id="formatHint"
+                  >Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide
+                  optional)</small
+                >
                 <input type="file" id="csvFile" accept=".csv" hidden />
               </div>
             </div>
 
-
-            <button id="parseBtn" class="btn btn-primary">Daten verarbeiten</button>
+            <button id="parseBtn" class="btn btn-primary">
+              Daten verarbeiten
+            </button>
           </div>
 
           <!-- Preview Section -->
@@ -81,7 +83,9 @@
                 <tbody id="previewBody"></tbody>
               </table>
             </div>
-            <div id="noPreview" class="no-preview">Noch keine Daten geladen</div>
+            <div id="noPreview" class="no-preview">
+              Noch keine Daten geladen
+            </div>
           </div>
 
           <!-- Layout Section -->
@@ -119,7 +123,9 @@
               <div id="pdfControls">
                 <div class="control-group">
                   <button id="zoomOutBtn" title="Verkleinern">−</button>
-                  <button id="zoomResetBtn" title="Zoom zurücksetzen">100%</button>
+                  <button id="zoomResetBtn" title="Zoom zurücksetzen">
+                    100%
+                  </button>
                   <button id="zoomInBtn" title="Vergrößern">+</button>
                 </div>
                 <div class="control-separator"></div>
@@ -128,7 +134,9 @@
                     ◄ Zurück
                   </button>
                   <span id="pageInfo"></span>
-                  <button id="nextPageBtn" title="Nächste Seite">Weiter ►</button>
+                  <button id="nextPageBtn" title="Nächste Seite">
+                    Weiter ►
+                  </button>
                 </div>
                 <div class="control-separator"></div>
                 <div class="control-group">

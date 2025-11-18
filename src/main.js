@@ -205,7 +205,7 @@ function displayPreview() {
     row.innerHTML = `
             <td>${escapeHtml(displayName)}</td>
             <td>${escapeHtml(item.function)}</td>
-            <td>${escapeHtml(item.zusatz)}</td>
+            <td>${escapeHtml(item.addition)}</td>
             <td><button class="delete-btn" onclick="deleteRow(${index})">Löschen</button></td>
         `;
     previewBody.appendChild(row);
