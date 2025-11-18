@@ -1,10 +1,10 @@
 /**
  * Parse CSV or tab-separated data into name tag entries
  * @param {string} content - The CSV/TSV content
- * @param {string} format - Format type: 'name-vorname-funktion', 'vorname-name-funktion', or 'name-funktion'
- * @returns {Array} Array of {vorname, name, function} objects, sorted alphabetically by name
+ * @param {string} format - Format type: 'name-vorname-funktion-zusatz', 'vorname-name-funktion-zusatz', or 'name-funktion-zusatz'
+ * @returns {Array} Array of {vorname, name, function, zusatz} objects, sorted alphabetically by name
  */
-export function parseCSV(content, format = "name-vorname-funktion") {
+export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
   const lines = content.trim().split("\n");
   const data = [];
 
@@ -19,34 +19,37 @@ export function parseCSV(content, format = "name-vorname-funktion") {
       parts = line.split(",").map((p) => p.trim());
     }
 
-    let entry = { vorname: "", name: "", function: "" };
+    let entry = { vorname: "", name: "", function: "", zusatz: "" };
 
     // Parse according to selected format
     switch (format) {
-      case "name-vorname-funktion":
-        // Name[TAB]Vorname[TAB]Funktion(optional)
+      case "name-vorname-funktion-zusatz":
+        // Name[TAB]Vorname[TAB]Funktion(optional)[TAB]Zusatz(optional)
         if (parts.length >= 1 && parts[0]) {
           entry.name = parts[0];
           entry.vorname = parts[1] || "";
           entry.function = parts[2] || "";
+          entry.zusatz = parts[3] || "";
         }
         break;
 
-      case "vorname-name-funktion":
-        // Vorname[TAB]Name[TAB]Funktion(optional)
+      case "vorname-name-funktion-zusatz":
+        // Vorname[TAB]Name[TAB]Funktion(optional)[TAB]Zusatz(optional)
         if (parts.length >= 1 && parts[0]) {
           entry.vorname = parts[0];
           entry.name = parts[1] || "";
           entry.function = parts[2] || "";
+          entry.zusatz = parts[3] || "";
         }
         break;
 
-      case "name-funktion":
-        // Name[TAB]Funktion (no Vorname in this format)
+      case "name-funktion-zusatz":
+        // Name[TAB]Funktion(optional)[TAB]Zusatz(optional) (no Vorname in this format)
         if (parts.length >= 1 && parts[0]) {
           entry.name = parts[0];
           entry.vorname = "";
           entry.function = parts[1] || "";
+          entry.zusatz = parts[2] || "";
         }
         break;
     }

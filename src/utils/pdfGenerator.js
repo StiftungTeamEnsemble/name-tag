@@ -233,7 +233,8 @@ export class PdfGenerator {
         .replace("{{name}}", item.name || "")
         .replace("{{displayName}}", displayName)
         .replace("{{vorname}}", item.vorname || "")
-        .replace("{{function}}", item.function || "");
+        .replace("{{function}}", item.function || "")
+        .replace("{{addition}}", item.zusatz || "");
 
       // Skip rendering if text is empty after replacement
       if (!text.trim()) {

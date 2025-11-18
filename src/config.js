@@ -21,7 +21,7 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  * - position: { x, y } coordinates in mm (top-left corner)
  *
  * 2. Text Element:
- * - content: Template string with {{displayName}} and {{function}} placeholders
+ * - content: Template string with {{displayName}}, {{function}}, and {{addition}} placeholders
  * - Empty fields will be skipped (no rendering if text is empty)
  * - width: (optional) Text box width in mm for multi-line text wrapping
  * - autoSize: (optional) Auto-scale text down to fit within width if any line is too long
@@ -62,6 +62,15 @@ import merriweatherRegularFontUrl from "../assets/fonts/Merriweather/ttf/Merriwe
  *       bottomPadding: 2,
  *       font: { size: 10, file: merriweatherRegularFontUrl, name: "Merriweather-Regular", style: "normal", lineHeight: 1.2 },
  *       color: "#666666",
+ *       width: 60
+ *     },
+ *     {
+ *       type: "text",
+ *       content: "{{addition}}",
+ *       topPadding: 1,
+ *       bottomPadding: 0,
+ *       font: { size: 8, file: merriweatherRegularFontUrl, name: "Merriweather-Regular", style: "normal", lineHeight: 1.2 },
+ *       color: "#999999",
  *       width: 60
  *     }
  *   ]
@@ -151,7 +160,23 @@ export const labelLayouts = {
             topPadding: 4,
             bottomPadding: 0,
             font: {
-              size: 8,
+              size: 9,
+              file: merriweatherRegularFontUrl,
+              name: "Merriweather-Regular",
+              style: "normal",
+              lineHeight: 1.2,
+            },
+            color: "#000000",
+            width: 56,
+            autoSize: true,
+          },
+          {
+            type: "text",
+            content: "{{addition}}",
+            topPadding: 1,
+            bottomPadding: 0,
+            font: {
+              size: 9,
               file: merriweatherRegularFontUrl,
               name: "Merriweather-Regular",
               style: "normal",
@@ -195,62 +220,4 @@ export function getAvailableLayouts() {
     value: key,
     label: labelLayouts[key].name,
   }));
-}
-
-/**
- * Create custom layout configuration
- */
-export function createCustomLayout(params) {
-  return {
-    name: params.name || "Custom",
-    paperFormat: params.paperFormat || "A4",
-    labelsX: params.labelsX || 2,
-    labelsY: params.labelsY || 10,
-    labelWidth: params.labelWidth || 100,
-    labelHeight: params.labelHeight || 30,
-    gapX: params.gapX || 2,
-    gapY: params.gapY || 2,
-    marginLeft: params.marginLeft || 5,
-    marginTop: params.marginTop || 5,
-    showBorder: params.showBorder || false, // Set to true for debugging label positioning
-    elements: params.elements || [
-      {
-        type: "image",
-        src: logoPdfUrl,
-        width: 12,
-        height: "auto",
-        position: { x: 2, y: 2 },
-      },
-      {
-        type: "text",
-        content: "{{displayName}}",
-        font: {
-          size: 14,
-          file: geistRegularFontUrl,
-          name: "Geist-Regular",
-          style: "normal",
-          features: {
-            ss03: true, // Stylistic Set 03
-          },
-        },
-        color: "#000000",
-        position: { x: 16, y: 7 },
-      },
-      {
-        type: "text",
-        content: "{{function}}",
-        font: {
-          size: 10,
-          file: merriweatherRegularFontUrl,
-          name: "Merriweather-Regular",
-          style: "normal",
-          lineHeight: 1.2, // Line height multiplier
-        },
-        color: "#666666",
-        width: 96, // Text box width in mm for multi-line wrapping
-        autoSize: true, // Auto-scale text to fit within width if line is too long
-        position: { x: 2, y: 25 },
-      },
-    ],
-  };
 }

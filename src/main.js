@@ -45,20 +45,20 @@ populateLayoutDropdown();
 function updatePlaceholders() {
   const format = formatSelect.value;
   const placeholders = {
-    "name-vorname-funktion": {
+    "name-vorname-funktion-zusatz": {
       manual:
-        "Namen und Funktionen eingeben\nFormat: Name[TAB]Vorname[TAB]Funktion\n\nBeispiel:\nMustermann\tMax\tDirektor\nMusterfrau\tErika\tManagerin",
-      hint: "Format: Name[TAB]Vorname[TAB]Funktion (optional)",
+        "Namen und Funktionen eingeben\nFormat: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tMax\tDirektor\tAbteilung A\nMusterfrau\tErika\tManagerin\t",
+      hint: "Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide optional)",
     },
-    "vorname-name-funktion": {
+    "vorname-name-funktion-zusatz": {
       manual:
-        "Namen und Funktionen eingeben\nFormat: Vorname[TAB]Name[TAB]Funktion\n\nBeispiel:\nMax\tMustermann\tDirektor\nErika\tMusterfrau\tManagerin",
-      hint: "Format: Vorname[TAB]Name[TAB]Funktion (optional)",
+        "Namen und Funktionen eingeben\nFormat: Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMax\tMustermann\tDirektor\tAbteilung A\nErika\tMusterfrau\tManagerin\t",
+      hint: "Format: Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz (beide optional)",
     },
-    "name-funktion": {
+    "name-funktion-zusatz": {
       manual:
-        "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion\n\nBeispiel:\nMustermann\tDirektor\nMusterfrau\tManagerin",
-      hint: "Format: Name[TAB]Funktion (optional)",
+        "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tDirektor\tAbteilung A\nMusterfrau\tManagerin\t",
+      hint: "Format: Name[TAB]Funktion[TAB]Zusatz (beide optional)",
     },
   };
 
@@ -184,6 +184,7 @@ function displayPreview() {
     row.innerHTML = `
             <td>${escapeHtml(displayName)}</td>
             <td>${escapeHtml(item.function)}</td>
+            <td>${escapeHtml(item.zusatz)}</td>
             <td><button class="delete-btn" onclick="deleteRow(${index})">Löschen</button></td>
         `;
     previewBody.appendChild(row);

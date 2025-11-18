@@ -28,9 +28,9 @@
             <div class="format-selector">
               <label for="formatSelect">Datenformat:</label>
               <select id="formatSelect">
-                <option value="vorname-name-funktion">Vorname[TAB]Name[TAB]Funktion (optional)</option>
-                <option value="name-vorname-funktion">Name[TAB]Vorname[TAB]Funktion (optional)</option>
-                <option value="name-funktion">Name[TAB]Funktion (optional)</option>
+                <option value="vorname-name-funktion-zusatz">Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz (beide optional)</option>
+                <option value="name-vorname-funktion-zusatz">Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide optional)</option>
+                <option value="name-funktion-zusatz">Name[TAB]Funktion[TAB]Zusatz (beide optional)</option>
               </select>
             </div>
 
@@ -38,7 +38,7 @@
             <div id="manual-tab" class="tab-content active">
               <textarea
                 id="manualInput"
-                placeholder="Namen und Funktionen eingeben&#10;Format: Name[TAB]Vorname[TAB]Funktion&#10;&#10;Beispiel:&#10;Mustermann	Max	Direktor&#10;Musterfrau	Erika	Managerin"
+                placeholder="Namen und Funktionen eingeben&#10;Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz&#10;&#10;Beispiel:&#10;Mustermann	Max	Direktor	Abteilung A&#10;Musterfrau	Erika	Managerin	"
               ></textarea>
             </div>
 
@@ -56,7 +56,7 @@
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
                 <p>CSV-Datei hierher ziehen oder klicken zum Auswählen</p>
-                <small id="formatHint">Format: Name[TAB]Vorname[TAB]Funktion (optional)</small>
+                <small id="formatHint">Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide optional)</small>
                 <input type="file" id="csvFile" accept=".csv" hidden />
               </div>
             </div>
@@ -74,6 +74,7 @@
                   <tr>
                     <th>Name</th>
                     <th>Funktion</th>
+                    <th>Zusatz</th>
                     <th>Aktion</th>
                   </tr>
                 </thead>
