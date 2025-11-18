@@ -38,32 +38,53 @@ function populateLayoutDropdown() {
   });
 }
 
+// Format configurations
+const formatConfigurations = {
+  "vorname-name-funktion-zusatz": {
+    label: "Vorname[TAB]Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
+    manual:
+      "Namen und Funktionen eingeben\nFormat: Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMax\tMustermann\tDirektor\tAbteilung A\nErika\tMusterfrau\tManagerin\t",
+    hint: "Format: Vorname[TAB]Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
+  },
+  "name-vorname-funktion-zusatz": {
+    label: "Name[TAB]Vorname[TAB]Funktion (optional)[TAB]Zusatz (optional)",
+    manual:
+      "Namen und Funktionen eingeben\nFormat: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tMax\tDirektor\tAbteilung A\nMusterfrau\tErika\tManagerin\t",
+    hint: "Format: Name[TAB]Vorname[TAB]Funktion (optional)[TAB]Zusatz (optional)",
+  },
+  "name-funktion-zusatz": {
+    label: "Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
+    manual:
+      "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tDirektor\tAbteilung A\nMusterfrau\tManagerin\t",
+    hint: "Format: Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
+  },
+};
+
 // Initialize
+populateFormatDropdown();
 populateLayoutDropdown();
+
+// Populate format dropdown
+function populateFormatDropdown() {
+  formatSelect.innerHTML = "";
+
+  Object.keys(formatConfigurations).forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = formatConfigurations[key].label;
+    formatSelect.appendChild(option);
+  });
+}
 
 // Update placeholder text based on format selection
 function updatePlaceholders() {
   const format = formatSelect.value;
-  const placeholders = {
-    "name-vorname-funktion-zusatz": {
-      manual:
-        "Namen und Funktionen eingeben\nFormat: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tMax\tDirektor\tAbteilung A\nMusterfrau\tErika\tManagerin\t",
-      hint: "Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide optional)",
-    },
-    "vorname-name-funktion-zusatz": {
-      manual:
-        "Namen und Funktionen eingeben\nFormat: Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMax\tMustermann\tDirektor\tAbteilung A\nErika\tMusterfrau\tManagerin\t",
-      hint: "Format: Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz (beide optional)",
-    },
-    "name-funktion-zusatz": {
-      manual:
-        "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tDirektor\tAbteilung A\nMusterfrau\tManagerin\t",
-      hint: "Format: Name[TAB]Funktion[TAB]Zusatz (beide optional)",
-    },
-  };
+  const config = formatConfigurations[format];
 
-  manualInput.placeholder = placeholders[format].manual;
-  formatHint.textContent = placeholders[format].hint;
+  if (config) {
+    manualInput.placeholder = config.manual;
+    formatHint.textContent = config.hint;
+  }
 }
 
 // Initialize placeholders
