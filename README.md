@@ -1,17 +1,19 @@
 # Name Tag PDF Generator
 
-A modern web application for generating professional PDF name tags from CSV data or manual input. Perfect for events, conferences, and team gatherings.
+A modern web application and CLI tool for generating professional PDF name tags from CSV data or manual input. Perfect for events, conferences, and team gatherings.
 
 ## Features
 
-- 📤 **Multiple Input Methods**: Upload CSV files via drag & drop or paste data manually
+- �️ **Web Interface & CLI**: Use via browser or command line
+- �📤 **Multiple Input Methods**: Upload CSV files via drag & drop or paste data manually
 - 🏷️ **Predefined Layouts**: Zweckform L4785-20 label support out of the box
 - ⚙️ **Custom Layouts**: Create custom label configurations for any label sheet
-- 👁️ **PDF Preview**: View generated PDFs before downloading using PDF.js
+- 👁️ **PDF Preview**: View generated PDFs before downloading using PDF.js (web only)
 - 🎨 **Professional Design**: Clean, modern UI built with vanilla CSS
 - 📱 **Responsive**: Works on desktop and tablet devices
 - 🚀 **Fast Build**: Vite-powered development server and optimized builds
 - 🌍 **GitHub Pages Ready**: Automatic deployment via GitHub Actions
+- 🤖 **Automation**: CLI tool for batch processing and integration into workflows
 
 ## Tech Stack
 
@@ -54,20 +56,22 @@ npm run dev
 
 ## Usage
 
-### Input Data
+### Web Interface
 
-#### CSV Upload
+#### Input Data
+
+##### CSV Upload
 
 1. Click the upload area or drag and drop a CSV file
 2. Format: `Name[TAB]Function` (tab-separated) or `Name,Function` (comma-separated)
 
-#### Manual Input
+##### Manual Input
 
 1. Switch to "Manual Input" tab
 2. Enter data in the text area, one entry per line
 3. Use TAB to separate name and function
 
-### Generate PDF
+#### Generate PDF
 
 1. Click "Parse Data" to load your entries
 2. Preview loaded entries in the table
@@ -75,6 +79,26 @@ npm run dev
    - **Predefined**: Zweckform L4785-20 (default)
    - **Custom**: Define your own parameters
 4. Click "Generate PDF" to download or "Preview PDF" to view first
+
+### Command Line Interface (CLI)
+
+For automated workflows, batch processing, or integration into build pipelines:
+
+```bash
+# Basic usage
+node src/cli.js example-data.csv
+
+# Specify format and output
+node src/cli.js data.csv --format vorname-name-funktion-zusatz --output tags.pdf
+
+# Use different layout
+node src/cli.js data.csv --layout zweckform-L4785-20-no-logo
+
+# Show help
+node src/cli.js --help
+```
+
+**See [QUICKSTART.md](QUICKSTART.md) and [CLI-README.md](CLI-README.md) for detailed CLI documentation.**
 
 ### Predefined Layouts
 
@@ -117,18 +141,26 @@ npm run deploy
 ```
 name-tag/
 ├── src/
-│   ├── main.js              # Main application logic
-│   ├── styles.css           # Global styles
+│   ├── main.js                    # Main web application logic
+│   ├── cli.js                     # CLI entry point
+│   ├── config.js                  # Web configuration (Vite URLs)
+│   ├── configNode.js              # Node.js configuration (file paths)
+│   ├── styles.css                 # Global styles
 │   └── utils/
-│       ├── csvParser.js     # CSV/TSV parsing utility
-│       ├── pdfGenerator.js  # PDF generation with jsPDF
-│       └── pdfPreviewManager.js # PDF preview with PDF.js
+│       ├── csvParser.js           # CSV/TSV parsing (shared)
+│       ├── pdfGenerator.js        # PDF generation for web
+│       ├── pdfGeneratorNode.js    # PDF generation for CLI
+│       └── pdfPreviewManager.js   # PDF preview with PDF.js (web only)
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml       # GitHub Actions deployment
-├── index.html               # Main HTML file
-├── vite.config.js          # Vite configuration
-└── package.json            # Dependencies and scripts
+│       └── deploy.yml             # GitHub Actions deployment
+├── index.html                     # Main HTML file
+├── vite.config.js                # Vite configuration
+├── package.json                   # Dependencies and scripts
+├── README.md                      # This file
+├── CLI-README.md                  # Detailed CLI documentation
+├── QUICKSTART.md                  # Quick CLI reference
+└── REFACTORING-SUMMARY.md         # Architecture documentation
 ```
 
 ## GitHub Pages Deployment

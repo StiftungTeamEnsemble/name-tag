@@ -1,11 +1,11 @@
-Name	Function
-John Doe	CEO
-Jane Smith	Product Manager
-Bob Johnson	Senior Developer
-Alice Williams	UX Designer
-Charlie Brown	Sales Lead
-Diana Prince	HR Manager
-Eve Martinez	DevOps Engineer
-Frank Miller	Data Scientist
-Grace Lee	Marketing Manager
-Henry Wilson	QA Engineer
+Name	Function	Additional
+John Doe	CEO	Department
+Jane Smith	Product Manager	Department
+Bob Johnson	Senior Developer	Department
+Alice Williams	UX Designer	Department
+Charlie Brown	Sales Lead	Department
+Diana Prince	HR Manager	Department
+Eve Martinez	DevOps Engineer	Department
+Frank Miller	Data Scientist	Department
+Grace Lee	Marketing Manager	Department
+Henry Wilson	QA Engineer	Department

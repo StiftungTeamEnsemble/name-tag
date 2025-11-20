@@ -10,3 +10,4 @@ yarn-error.log*
 .env.production.local
 .vite/
 .turbo/
+/test.sh

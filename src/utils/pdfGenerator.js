@@ -1,11 +1,11 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { getLayoutConfig } from "../config.js";
+import { BrowserResourceLoader } from "./resourceLoader.js";
 
 export class PdfGenerator {
-  constructor(data, layoutName) {
+  constructor(data, layoutConfig, resourceLoader = null, assetPaths = {}) {
     this.data = data;
-    this.layoutConfig = getLayoutConfig(layoutName);
+    this.layoutConfig = layoutConfig;
     this.layout = {
       paperFormat: this.layoutConfig.paperFormat,
       labelsX: this.layoutConfig.labelsX,
@@ -22,6 +22,9 @@ export class PdfGenerator {
     this.fontCache = {};
     this.imageCache = {};
     this.page = null;
+    // Use provided resource loader or default to browser loader
+    this.resourceLoader = resourceLoader || new BrowserResourceLoader();
+    this.assetPaths = assetPaths;
   }
 
   /**
@@ -166,8 +169,10 @@ export class PdfGenerator {
       if (this.imageCache[element.src]) {
         logoPage = this.imageCache[element.src];
       } else {
-        // Load PDF
-        const pdfData = await this.loadPdf(element.src);
+        // Resolve path from asset key or use as-is
+        const pdfPath = this.assetPaths[element.src] || element.src;
+        const pdfData = await this.resourceLoader.loadPdf(pdfPath);
+
         if (pdfData) {
           const logoPdf = await PDFDocument.load(pdfData);
           [logoPage] = await this.pdfDoc.embedPdf(logoPdf, [0]);
@@ -196,20 +201,6 @@ export class PdfGenerator {
       }
     } catch (error) {
       console.error("Error drawing image:", error);
-    }
-  }
-
-  /**
-   * Load PDF as bytes
-   */
-  async loadPdf(pdfPath) {
-    try {
-      const response = await fetch(pdfPath);
-      const pdfBytes = await response.arrayBuffer();
-      return pdfBytes;
-    } catch (error) {
-      console.error("Error loading PDF:", error);
-      return null;
     }
   }
 
@@ -489,12 +480,9 @@ export class PdfGenerator {
     }
 
     try {
-      const response = await fetch(fontConfig.file);
-      if (!response.ok) {
-        throw new Error(`Failed to load font at ${fontConfig.file}`);
-      }
-
-      const fontBytes = await response.arrayBuffer();
+      // Resolve path from asset key or use as-is
+      const fontPath = this.assetPaths[fontConfig.file] || fontConfig.file;
+      const fontBytes = await this.resourceLoader.loadFont(fontPath);
 
       // Embed font with subset to reduce file size and use custom name
       const font = await this.pdfDoc.embedFont(fontBytes, {

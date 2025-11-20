@@ -1,7 +1,7 @@
 import { parseCSV } from "./utils/csvParser.js";
 import { PdfGenerator } from "./utils/pdfGenerator.js";
 import { PdfPreviewManager } from "./utils/pdfPreviewManager.js";
-import { getAvailableLayouts } from "./config.js";
+import { getAvailableLayouts, getLayoutConfig, assetPaths } from "./config.js";
 
 let nameTagData = [];
 let pdfGenerator = null;
@@ -235,7 +235,8 @@ generateBtn.addEventListener("click", async () => {
   }
 
   const layoutName = layoutSelect.value;
-  pdfGenerator = new PdfGenerator(nameTagData, layoutName);
+  const layoutConfig = getLayoutConfig(layoutName);
+  pdfGenerator = new PdfGenerator(nameTagData, layoutConfig, null, assetPaths);
 
   try {
     await pdfGenerator.generate();
@@ -253,7 +254,8 @@ previewPdfBtn.addEventListener("click", async () => {
   }
 
   const layoutName = layoutSelect.value;
-  pdfGenerator = new PdfGenerator(nameTagData, layoutName);
+  const layoutConfig = getLayoutConfig(layoutName);
+  pdfGenerator = new PdfGenerator(nameTagData, layoutConfig, null, assetPaths);
 
   try {
     const pdfBytes = await pdfGenerator.generateBytes();
