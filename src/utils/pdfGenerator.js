@@ -8,12 +8,12 @@ export class PdfGenerator {
     this.layoutConfig = layoutConfig;
     this.layout = {
       paperFormat: this.layoutConfig.paperFormat,
-      labelsX: this.layoutConfig.labelsX,
-      labelsY: this.layoutConfig.labelsY,
+      columns: this.layoutConfig.columns,
+      rows: this.layoutConfig.rows,
       labelWidth: this.layoutConfig.labelWidth,
       labelHeight: this.layoutConfig.labelHeight,
-      gapX: this.layoutConfig.gapX,
-      gapY: this.layoutConfig.gapY,
+      rowGap: this.layoutConfig.rowGap,
+      columnGap: this.layoutConfig.columnGap,
       marginLeft: this.layoutConfig.marginLeft,
       marginTop: this.layoutConfig.marginTop,
       showBorder: this.layoutConfig.showBorder || false,
@@ -61,11 +61,11 @@ export class PdfGenerator {
 
     // Calculate label dimensions accounting for gaps
     this.layout.labelWidth =
-      (availableWidth - (this.layout.labelsX - 1) * this.layout.gapX) /
-      this.layout.labelsX;
+      (availableWidth - (this.layout.columns - 1) * this.layout.rowGap) /
+      this.layout.columns;
     this.layout.labelHeight =
-      (availableHeight - (this.layout.labelsY - 1) * this.layout.gapY) /
-      this.layout.labelsY;
+      (availableHeight - (this.layout.rows - 1) * this.layout.columnGap) /
+      this.layout.rows;
   }
 
   /**
@@ -86,15 +86,15 @@ export class PdfGenerator {
     this.pdfDoc = await PDFDocument.create();
     this.pdfDoc.registerFontkit(fontkit);
 
-    const labelsPerPage = this.layout.labelsX * this.layout.labelsY;
+    const labelsPerPage = this.layout.columns * this.layout.rows;
     let labelIndex = 0;
 
     // Create pages until all labels are placed
     while (labelIndex < this.data.length) {
       this.page = this.pdfDoc.addPage([pageDims.width, pageDims.height]);
 
-      for (let rowIdx = 0; rowIdx < this.layout.labelsY; rowIdx++) {
-        for (let colIdx = 0; colIdx < this.layout.labelsX; colIdx++) {
+      for (let rowIdx = 0; rowIdx < this.layout.rows; rowIdx++) {
+        for (let colIdx = 0; colIdx < this.layout.columns; colIdx++) {
           if (labelIndex >= this.data.length) {
             break;
           }
@@ -102,13 +102,13 @@ export class PdfGenerator {
           // Calculate position (pdf-lib uses bottom-left origin, so we need to flip Y)
           const x = this.mmToPoints(
             this.layout.marginLeft +
-              colIdx * (this.layout.labelWidth + this.layout.gapX),
+              colIdx * (this.layout.labelWidth + this.layout.rowGap),
           );
           const y =
             pageDims.height -
             this.mmToPoints(
               this.layout.marginTop +
-                rowIdx * (this.layout.labelHeight + this.layout.gapY),
+                rowIdx * (this.layout.labelHeight + this.layout.columnGap),
             ) -
             this.mmToPoints(this.layout.labelHeight);
 

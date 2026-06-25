@@ -4,8 +4,8 @@ A modern web application and CLI tool for generating professional PDF name tags 
 
 ## Features
 
-- �️ **Web Interface & CLI**: Use via browser or command line
-- �📤 **Multiple Input Methods**: Upload CSV files via drag & drop or paste data manually
+- 💻 **Web Interface & CLI**: Use via browser or command line
+- 📤 **Multiple Input Methods**: Upload CSV files via drag & drop or paste data manually
 - 🏷️ **Predefined Layouts**: Zweckform L4785-20 label support out of the box
 - ⚙️ **Custom Layouts**: Create custom label configurations for any label sheet
 - 👁️ **PDF Preview**: View generated PDFs before downloading using PDF.js (web only)
@@ -223,12 +223,12 @@ Edit `src/main.js` in the `getSelectedLayout()` function:
     return {
         name: 'Your Label Name',
         paperFormat: 'A4',
-        labelsX: 4,
-        labelsY: 10,
+        columns: 4,
+        rows: 10,
         labelWidth: 50,
         labelHeight: 25,
-        gapX: 1,
-        gapY: 1,
+        rowGap: 1,
+        columnGap: 1,
         marginLeft: 5,
         marginTop: 5
     };
