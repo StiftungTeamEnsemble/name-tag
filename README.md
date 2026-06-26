@@ -94,9 +94,26 @@ node src/cli.js data.csv --format vorname-name-funktion-zusatz --output tags.pdf
 # Use different layout
 node src/cli.js data.csv --layout zweckform-L4785-20-no-logo
 
+# Generate 90×135mm photo badges (3-up on A4 landscape, with crop marks)
+node src/cli.js DATA/example-badges.csv \
+  --format vorname-name-image \
+  --layout team-ensemble-badge-90x135 \
+  --image-dir DATA \
+  --output badges.pdf
+
 # Show help
 node src/cli.js --help
 ```
+
+CLI options:
+
+- `--format <format>` — CSV column format (see formats below)
+- `--layout <layout>` — layout name
+- `--output <file>` — output PDF path
+- `--image-dir <dir>` — folder containing the photos referenced by filename in
+  the CSV (required for the badge layout). Filenames are matched
+  case-insensitively and Unicode-normalization-insensitively (handy on macOS,
+  whose filenames are NFD).
 
 **See [QUICKSTART.md](QUICKSTART.md) and [CLI-README.md](CLI-README.md) for detailed CLI documentation.**
 
@@ -107,6 +124,63 @@ node src/cli.js --help
 - Labels per page: 80 (4 columns × 20 rows)
 - Label size: 52.5 × 21.2 mm
 - Paper format: A4
+
+#### Team Ensemble Badge 90×135mm (`team-ensemble-badge-90x135`)
+
+- Badge size: 90 × 135 mm
+- 3 badges per A4 **landscape** sheet, side by side with **0 mm gap**, centered
+- **Crop marks** at every badge corner
+- Each badge contains:
+  - a **circular masked photo** (75 × 75 mm), loaded by filename from the image
+    folder (`--image-dir` / "Bildordner auswählen" in the web UI)
+  - the **name** (`{{displayName}}`), auto-sized and centered
+  - a "Bleib im Kontakt mit **Team Ensemble**" footer
+  - a **QR code** (generated with the `qrcode` package)
+
+Use it with the `vorname-name-image` CSV format. A debug variant
+`team-ensemble-badge-90x135-debug` draws the badge outlines.
+
+##### Face detection
+
+The variant `team-ensemble-badge-90x135-face` runs face detection
+([@vladmandic/human](https://github.com/vladmandic/human)) on each photo and
+positions/scales it so every face ends up at the same size and position inside
+the circular mask. If a face-centered crop would leave the mask uncovered, the
+image is scaled up to the closest fit that still fills the whole mask; if no
+face is found it falls back to plain cover/center.
+
+It works in both environments:
+
+- **CLI**: face detection is enabled automatically when the layout needs it
+  (uses Human's WASM TensorFlow backend with models bundled locally — no native
+  build and no network required).
+- **Web**: enabled automatically for face layouts (uses the WebGL backend; the
+  detection library is lazy-loaded and models are fetched from a CDN, so the
+  first run needs network access). Select the image folder first.
+
+Per-`imageData` tunables (with defaults): `faceHeightFraction` (0.6),
+`faceCenterX` (0.5), `faceCenterY` (0.55).
+
+```bash
+node src/cli.js DATA/example-badges.csv \
+  --format vorname-name-image \
+  --layout team-ensemble-badge-90x135-face \
+  --image-dir DATA \
+  --output badges.pdf
+```
+
+##### Image folder
+
+The badge layout references photos by filename. Provide the folder via:
+
+- **CLI**: `--image-dir <dir>`
+- **Web**: the "Bildordner auswählen" button, which uses the
+  [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API)
+  (`showDirectoryPicker`) with a `<input webkitdirectory>` fallback for browsers
+  that don't support it.
+
+A ready-made test CSV referencing the photos in `DATA/` is at
+`DATA/example-badges.csv`.
 
 ### Custom Layout Parameters
 

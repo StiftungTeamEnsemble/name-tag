@@ -98,6 +98,23 @@
                 <!-- Options populated dynamically from config.js -->
               </select>
             </div>
+
+            <!-- Image folder selection (for badge layouts referencing photos) -->
+            <div class="folder-selector">
+              <label>Bildordner (für Badge-Layout mit Fotos):</label>
+              <button id="selectFolderBtn" class="btn btn-secondary" type="button">
+                Bildordner auswählen
+              </button>
+              <input
+                type="file"
+                id="folderInput"
+                webkitdirectory
+                directory
+                multiple
+                hidden
+              />
+              <small id="folderStatus">Kein Ordner ausgewählt</small>
+            </div>
           </div>
 
           <!-- Generate Section -->

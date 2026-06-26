@@ -32,6 +32,19 @@ export class BrowserResourceLoader {
       return null;
     }
   }
+
+  async loadImage(imagePath) {
+    try {
+      const response = await fetch(imagePath);
+      if (!response.ok) {
+        throw new Error(`Failed to load image at ${imagePath}`);
+      }
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.error("Error loading image:", error);
+      return null;
+    }
+  }
 }
 
 /**
@@ -74,6 +87,20 @@ export class NodeResourceLoader {
       );
     } catch (error) {
       console.error("Error loading PDF:", error);
+      return null;
+    }
+  }
+
+  async loadImage(imagePath) {
+    try {
+      await this._ensureFs();
+      const buffer = this.fs.readFileSync(imagePath);
+      return buffer.buffer.slice(
+        buffer.byteOffset,
+        buffer.byteOffset + buffer.byteLength,
+      );
+    } catch (error) {
+      console.error("Error loading image:", error);
       return null;
     }
   }

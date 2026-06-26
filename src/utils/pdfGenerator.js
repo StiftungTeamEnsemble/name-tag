@@ -1,13 +1,72 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import {
+  PDFDocument,
+  rgb,
+  StandardFonts,
+  pushGraphicsState,
+  popGraphicsState,
+  moveTo,
+  appendBezierCurve,
+  closePath,
+  clip,
+  endPath,
+} from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
+import QRCode from "qrcode";
 import { BrowserResourceLoader } from "./resourceLoader.js";
 
+/**
+ * Parse a measurement that may be a number (mm) or a string like "7.50mm".
+ */
+export function parseMm(value) {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = parseFloat(value.replace(/mm$/i, "").trim());
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+/**
+ * Decode a base64 string to bytes (works in browser and Node.js).
+ */
+function base64ToBytes(b64) {
+  if (typeof atob === "function") {
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return arr;
+  }
+  return Uint8Array.from(Buffer.from(b64, "base64"));
+}
+
+/**
+ * Convert a data: URL to bytes.
+ */
+function dataUrlToBytes(dataUrl) {
+  const comma = dataUrl.indexOf(",");
+  return base64ToBytes(dataUrl.slice(comma + 1));
+}
+
 export class PdfGenerator {
-  constructor(data, layoutConfig, resourceLoader = null, assetPaths = {}) {
+  /**
+   * @param {Array} data - parsed records
+   * @param {Object} layoutConfig - layout definition
+   * @param {Object} resourceLoader - font/pdf loader (browser or node)
+   * @param {Object} assetPaths - resolved asset paths
+   * @param {Object} [options] - { imageLoader: async (filename) => ArrayBuffer|null }
+   */
+  constructor(
+    data,
+    layoutConfig,
+    resourceLoader = null,
+    assetPaths = {},
+    options = {},
+  ) {
     this.data = data;
     this.layoutConfig = layoutConfig;
     this.layout = {
       paperFormat: this.layoutConfig.paperFormat,
+      landscape: this.layoutConfig.landscape || false,
       columns: this.layoutConfig.columns,
       rows: this.layoutConfig.rows,
       labelWidth: this.layoutConfig.labelWidth,
@@ -17,14 +76,23 @@ export class PdfGenerator {
       marginLeft: this.layoutConfig.marginLeft,
       marginTop: this.layoutConfig.marginTop,
       showBorder: this.layoutConfig.showBorder || false,
+      cropMarks: this.layoutConfig.cropMarks || false,
     };
     this.pdfDoc = null;
     this.fontCache = {};
     this.imageCache = {};
+    this.imageDataCache = {};
+    this.bytesCache = {};
+    this.faceCache = {};
     this.page = null;
     // Use provided resource loader or default to browser loader
     this.resourceLoader = resourceLoader || new BrowserResourceLoader();
     this.assetPaths = assetPaths;
+    // Optional loader resolving a bare filename (from CSV) to image bytes
+    this.imageLoader = options.imageLoader || null;
+    // Optional face detector: async (bytes, key) => { x, y, width, height } | null
+    // (normalized [0..1] face box in image space, top-left origin)
+    this.faceDetector = options.faceDetector || null;
   }
 
   /**
@@ -40,7 +108,12 @@ export class PdfGenerator {
       Letter: { width: this.mmToPoints(215.9), height: this.mmToPoints(279.4) },
       A3: { width: this.mmToPoints(297), height: this.mmToPoints(420) },
     };
-    return dimensions[format] || dimensions["A4"];
+    const dims = dimensions[format] || dimensions["A4"];
+    // Swap dimensions for landscape orientation
+    if (this.layout.landscape) {
+      return { width: dims.height, height: dims.width };
+    }
+    return dims;
   }
 
   /**
@@ -150,8 +223,100 @@ export class PdfGenerator {
         await this.drawText(element, item, x, y, labelHeight);
       } else if (element.type === "story") {
         await this.drawStory(element, item, x, y, labelHeight);
+      } else if (element.type === "mask") {
+        await this.drawMask(element, item, x, y, labelHeight);
+      } else if (element.type === "imageData") {
+        await this.drawImageData(element, item, x, y, labelHeight, null);
+      } else if (element.type === "textbox") {
+        await this.drawTextbox(element, item, x, y, labelHeight);
+      } else if (element.type === "qrcode") {
+        await this.drawQrCode(element, item, x, y, labelHeight);
       }
     }
+
+    // Draw crop marks last so they sit on top
+    if (this.layout.cropMarks) {
+      this.drawCropMarks(x, y, labelWidth, labelHeight);
+    }
+  }
+
+  /**
+   * Draw printer crop marks at the four corners of a label.
+   *
+   * Marks always extend outward from the trim box, separated by a gap, so they
+   * never touch the badge's final format. When labels are packed too tightly to
+   * fit a mark in the gap between them, the marks that would point into a
+   * neighbour are omitted:
+   *   - vertical marks (which indicate a vertical cut) are kept unless the rows
+   *     are too close together,
+   *   - horizontal marks (which indicate a horizontal cut) are kept unless the
+   *     columns are too close together.
+   */
+  drawCropMarks(x, y, labelWidth, labelHeight) {
+    const gap = this.mmToPoints(2); // gap between trim and mark
+    const len = this.mmToPoints(4); // length of each mark
+    const color = rgb(0, 0, 0);
+    const thickness = 0.25;
+
+    // A mark needs (gap + len) of clearance on each side to stay clear of an
+    // adjacent badge's trim, so a between-badge space below 2*(gap+len) is "tight".
+    const minSpacing = 2 * (this.mmToPoints(2) + this.mmToPoints(4));
+    const horizontallyTight =
+      this.layout.columns > 1 && this.mmToPoints(this.layout.rowGap) < minSpacing;
+    const verticallyTight =
+      this.layout.rows > 1 &&
+      this.mmToPoints(this.layout.columnGap) < minSpacing;
+
+    const left = x;
+    const right = x + labelWidth;
+    const bottom = y;
+    const top = y + labelHeight;
+
+    const line = (x1, y1, x2, y2) =>
+      this.page.drawLine({
+        start: { x: x1, y: y1 },
+        end: { x: x2, y: y2 },
+        thickness,
+        color,
+      });
+
+    // For each corner: one vertical mark + one horizontal mark, both outside the trim
+    const corners = [
+      { cx: left, cy: top, hDir: -1, vDir: 1 }, // top-left
+      { cx: right, cy: top, hDir: 1, vDir: 1 }, // top-right
+      { cx: left, cy: bottom, hDir: -1, vDir: -1 }, // bottom-left
+      { cx: right, cy: bottom, hDir: 1, vDir: -1 }, // bottom-right
+    ];
+
+    for (const { cx, cy, hDir, vDir } of corners) {
+      // Vertical mark (extends above/below the corner) — marks a vertical cut
+      if (!verticallyTight) {
+        line(cx, cy + vDir * gap, cx, cy + vDir * (gap + len));
+      }
+      // Horizontal mark (extends left/right of the corner) — marks a horizontal cut
+      if (!horizontallyTight) {
+        line(cx + hDir * gap, cy, cx + hDir * (gap + len), cy);
+      }
+    }
+  }
+
+  /**
+   * Replace template variables in a string using a data record.
+   */
+  applyTemplate(str, item) {
+    if (typeof str !== "string") return str;
+    // Normalize visible text to NFC: source data (e.g. macOS filenames) can be
+    // decomposed (NFD), which pdf-lib renders with mispositioned diacritics.
+    const nfc = (v) => (v || "").normalize("NFC");
+    const displayName = `${item.vorname || ""} ${item.name || ""}`.trim();
+    return str
+      .replace(/\{\{name\}\}/g, nfc(item.name))
+      .replace(/\{\{displayName\}\}/g, nfc(displayName))
+      .replace(/\{\{vorname\}\}/g, nfc(item.vorname))
+      .replace(/\{\{function\}\}/g, nfc(item.function))
+      .replace(/\{\{addition\}\}/g, nfc(item.addition))
+      // image filename left un-normalized; loaders handle NFC matching themselves
+      .replace(/\{\{image\}\}/g, item.image || "");
   }
 
   /**
@@ -452,6 +617,520 @@ export class PdfGenerator {
 
     // Return total height consumed (number of lines * totalLineHeight)
     return lines.length * totalLineHeight;
+  }
+
+  /**
+   * Build PDF operators describing a circular path centered at (cx, cy).
+   */
+  circlePathOperators(cx, cy, r) {
+    const k = 0.5522847498307936 * r; // bezier approximation constant
+    return [
+      moveTo(cx + r, cy),
+      appendBezierCurve(cx + r, cy + k, cx + k, cy + r, cx, cy + r),
+      appendBezierCurve(cx - k, cy + r, cx - r, cy + k, cx - r, cy),
+      appendBezierCurve(cx - r, cy - k, cx - k, cy - r, cx, cy - r),
+      appendBezierCurve(cx + k, cy - r, cx + r, cy - k, cx + r, cy),
+      closePath(),
+    ];
+  }
+
+  /**
+   * Draw a mask element: clips its children to a shape (currently "circle").
+   * Coordinates use top-left origin (left/top/width/height in mm).
+   */
+  async drawMask(element, item, labelX, labelY, labelHeight) {
+    try {
+      const boxX = labelX + this.mmToPoints(parseMm(element.left));
+      const boxW = this.mmToPoints(parseMm(element.width));
+      const boxH = this.mmToPoints(parseMm(element.height));
+      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const boxBottomY = boxTopY - boxH;
+
+      this.page.pushOperators(pushGraphicsState());
+
+      if (element.typeMask === "circle") {
+        const cx = boxX + boxW / 2;
+        const cy = boxBottomY + boxH / 2;
+        const r = Math.min(boxW, boxH) / 2;
+        this.page.pushOperators(
+          ...this.circlePathOperators(cx, cy, r),
+          clip(),
+          endPath(),
+        );
+      }
+      // (other mask shapes could be added here; default = no clip)
+
+      // Draw children within the mask box coordinate frame
+      if (Array.isArray(element.children)) {
+        for (const child of element.children) {
+          if (child.type === "imageData") {
+            await this.drawImageData(
+              child,
+              item,
+              boxX,
+              boxBottomY,
+              boxH,
+            );
+          }
+        }
+      }
+
+      this.page.pushOperators(popGraphicsState());
+    } catch (error) {
+      console.error("Error drawing mask:", error);
+    }
+  }
+
+  /**
+   * Load raster image bytes from a folder filename, data URL, or path.
+   */
+  async loadImageBytes(src) {
+    if (!src) return null;
+    if (src.startsWith("data:")) return dataUrlToBytes(src);
+
+    const isBareName = !src.includes("/") && !src.includes("\\");
+    if (this.imageLoader && isBareName) {
+      return await this.imageLoader(src);
+    }
+    if (this.resourceLoader.loadImage) {
+      return await this.resourceLoader.loadImage(src);
+    }
+    return await this.resourceLoader.loadPdf(src);
+  }
+
+  /**
+   * Embed raster image bytes, detecting PNG vs JPEG.
+   */
+  async embedImageBytes(bytes) {
+    const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    if (u8[0] === 0x89 && u8[1] === 0x50) {
+      return await this.pdfDoc.embedPng(bytes);
+    }
+    if (u8[0] === 0xff && u8[1] === 0xd8) {
+      return await this.pdfDoc.embedJpg(bytes);
+    }
+    // Fallback: try JPEG then PNG
+    try {
+      return await this.pdfDoc.embedJpg(bytes);
+    } catch {
+      return await this.pdfDoc.embedPng(bytes);
+    }
+  }
+
+  /**
+   * Load (and cache) the raw bytes for a resolved src.
+   */
+  async getImageBytes(resolvedSrc) {
+    if (resolvedSrc in this.bytesCache) return this.bytesCache[resolvedSrc];
+    const bytes = await this.loadImageBytes(resolvedSrc);
+    this.bytesCache[resolvedSrc] = bytes || null;
+    return this.bytesCache[resolvedSrc];
+  }
+
+  /**
+   * Get an embedded image for a src (with template + caching).
+   */
+  async getEmbeddedImage(src, item) {
+    const resolved = this.applyTemplate(src, item);
+    if (!resolved) return null;
+    if (this.imageDataCache[resolved]) return this.imageDataCache[resolved];
+
+    const bytes = await this.getImageBytes(resolved);
+    if (!bytes) return null;
+    const img = await this.embedImageBytes(bytes);
+    this.imageDataCache[resolved] = img;
+    return img;
+  }
+
+  /**
+   * Detect (and cache) the face box for a src. Returns a normalized box
+   * { x, y, width, height } in [0..1] image space, or null.
+   */
+  async getFaceBox(src, item) {
+    if (!this.faceDetector) return null;
+    const resolved = this.applyTemplate(src, item);
+    if (!resolved) return null;
+    if (resolved in this.faceCache) return this.faceCache[resolved];
+
+    let box = null;
+    try {
+      const bytes = await this.getImageBytes(resolved);
+      box = bytes ? await this.faceDetector(bytes, resolved) : null;
+    } catch (error) {
+      console.error(`Face detection failed for ${resolved}:`, error);
+    }
+    this.faceCache[resolved] = box;
+    return box;
+  }
+
+  /**
+   * Compute the drawn-image rectangle (in box-local, top-left coordinates,
+   * points) so that a detected face is centered and uniformly sized across all
+   * images, while still fully covering the box (no gaps). If the face-based
+   * placement would leave the box uncovered, the image is scaled up to the
+   * closest fit that fills the box, then the position is clamped so it never
+   * exposes a gap.
+   *
+   * @returns { drawW, drawH, drawLeft, drawTop }
+   */
+  computeFacePlacement(boxW, boxH, imgAR, face, opts = {}) {
+    const faceHeightFraction = opts.faceHeightFraction ?? 0.6;
+    const faceCenterX = opts.faceCenterX ?? 0.5;
+    const faceCenterY = opts.faceCenterY ?? 0.55;
+
+    // Guard against degenerate detections.
+    const fw = Math.min(1, Math.max(0.02, face.width));
+    const fh = Math.min(1, Math.max(0.02, face.height));
+    const fcx = Math.min(1, Math.max(0, face.x + face.width / 2));
+    const fcy = Math.min(1, Math.max(0, face.y + face.height / 2));
+
+    // Scale the image so the face occupies the target height of the box.
+    let drawH = (faceHeightFraction * boxH) / fh;
+    let drawW = drawH * imgAR;
+
+    // Ensure the image fully covers the box ("closest fit, whole rect filled").
+    const coverFactor = Math.max(1, boxW / drawW, boxH / drawH);
+    drawW *= coverFactor;
+    drawH *= coverFactor;
+
+    // Place so the face center lands on the target point in the box.
+    const targetX = faceCenterX * boxW;
+    const targetY = faceCenterY * boxH;
+    let drawLeft = targetX - fcx * drawW;
+    let drawTop = targetY - fcy * drawH;
+
+    // Clamp so the box stays fully covered (drawLeft in [boxW-drawW, 0], etc.),
+    // staying as close as possible to the face-centered position.
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    drawLeft = clamp(drawLeft, boxW - drawW, 0);
+    drawTop = clamp(drawTop, boxH - drawH, 0);
+
+    return { drawW, drawH, drawLeft, drawTop };
+  }
+
+  /**
+   * Resolve an alignment value to a fraction in [0, 1].
+   * Accepts a number (already a fraction), a percentage string ("25%"),
+   * or a keyword. Defaults to 0.5 (center) for unknown values.
+   */
+  alignFraction(value, axis) {
+    if (typeof value === "number") return Math.min(1, Math.max(0, value));
+    if (typeof value === "string") {
+      const trimmed = value.trim().toLowerCase();
+      const keywords =
+        axis === "x"
+          ? { left: 0, center: 0.5, right: 1 }
+          : { top: 0, center: 0.5, bottom: 1 };
+      if (trimmed in keywords) return keywords[trimmed];
+      if (trimmed.endsWith("%")) {
+        const pct = parseFloat(trimmed);
+        if (!Number.isNaN(pct)) return Math.min(1, Math.max(0, pct / 100));
+      }
+    }
+    return 0.5;
+  }
+
+  /**
+   * Draw a raster image element within its box, with configurable fit and
+   * alignment. Defaults to object-fit: cover, centered (overflow is cropped by
+   * any enclosing mask clip).
+   *
+   * Options on the element:
+   *   objectFit: "cover" (default) | "contain" | "fill"
+   *   align:     "left" | "center" (default) | "right" | number/percent (X)
+   *   verticalAlign: "top" | "center" (default) | "bottom" | number/percent (Y)
+   *
+   * labelX/labelY/labelHeight describe the parent coordinate frame.
+   */
+  async drawImageData(element, item, labelX, labelY, labelHeight) {
+    try {
+      const boxX = labelX + this.mmToPoints(parseMm(element.left));
+      const boxW = this.mmToPoints(parseMm(element.width));
+      const boxH = this.mmToPoints(parseMm(element.height));
+      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const boxBottomY = boxTopY - boxH;
+
+      const img = await this.getEmbeddedImage(element.src, item);
+      if (!img) return;
+
+      const imgAR = img.width / img.height;
+
+      // Face-detection placement: center & uniformly scale around the face.
+      if (element.faceDetect && this.faceDetector) {
+        const face = await this.getFaceBox(element.src, item);
+        if (face) {
+          const { drawW, drawH, drawLeft, drawTop } = this.computeFacePlacement(
+            boxW,
+            boxH,
+            imgAR,
+            face,
+            {
+              faceHeightFraction: element.faceHeightFraction,
+              faceCenterX: element.faceCenterX,
+              faceCenterY: element.faceCenterY,
+            },
+          );
+          this.page.drawImage(img, {
+            x: boxX + drawLeft,
+            y: boxTopY - drawTop - drawH,
+            width: drawW,
+            height: drawH,
+          });
+          return;
+        }
+        // No face found → fall through to objectFit/align behavior.
+      }
+
+      const fit = element.objectFit || "cover";
+      const boxAR = boxW / boxH;
+
+      let drawW;
+      let drawH;
+      if (fit === "fill") {
+        drawW = boxW;
+        drawH = boxH;
+      } else if (fit === "contain") {
+        // Scale to fit entirely inside the box
+        if (imgAR > boxAR) {
+          drawW = boxW;
+          drawH = boxW / imgAR;
+        } else {
+          drawH = boxH;
+          drawW = boxH * imgAR;
+        }
+      } else {
+        // cover: scale to fill the box, cropping the overflow
+        if (imgAR > boxAR) {
+          drawH = boxH;
+          drawW = boxH * imgAR;
+        } else {
+          drawW = boxW;
+          drawH = boxW / imgAR;
+        }
+      }
+
+      // Alignment: hFrac 0=left..1=right ; vFrac 0=top..1=bottom
+      const hFrac = this.alignFraction(element.align, "x");
+      const vFrac = this.alignFraction(element.verticalAlign, "y");
+      const drawX = boxX + (boxW - drawW) * hFrac;
+      const drawY = boxBottomY + (boxH - drawH) * (1 - vFrac);
+
+      this.page.drawImage(img, {
+        x: drawX,
+        y: drawY,
+        width: drawW,
+        height: drawH,
+      });
+    } catch (error) {
+      console.error("Error drawing imageData:", error);
+    }
+  }
+
+  /**
+   * Wrap text into lines that fit maxWidth, optionally shrinking the font so
+   * the longest word fits. Returns { lines, fontSize }.
+   */
+  wrapText(text, font, fontSize, maxWidth, autoSize) {
+    let size = fontSize;
+    if (autoSize) {
+      let maxWordWidth = 0;
+      for (const word of text.split(" ")) {
+        maxWordWidth = Math.max(maxWordWidth, font.widthOfTextAtSize(word, size));
+      }
+      if (maxWordWidth > maxWidth) {
+        size = size * (maxWidth / maxWordWidth);
+      }
+    }
+
+    const words = text.split(" ");
+    const lines = [];
+    let current = "";
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (font.widthOfTextAtSize(test, size) > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+    return { lines, fontSize: size };
+  }
+
+  /**
+   * Layout a single paragraph (textbox child) and return its measured height
+   * and a render() closure. A child is either:
+   *   { content, font, color, autoSize, textAlign }  — wrapping text
+   *   { runs: [{ content, font, color }], textAlign } — single line, mixed fonts
+   */
+  async layoutParagraph(child, item, boxW, defaultAlign) {
+    const align = child.textAlign || defaultAlign;
+
+    if (Array.isArray(child.runs)) {
+      const runs = [];
+      let totalWidth = 0;
+      let maxFontSize = 0;
+      let maxLineHeight = 0;
+      for (const run of child.runs) {
+        const font = await this.ensureFont(run.font);
+        const size = run.font.size;
+        const content = this.applyTemplate(run.content, item);
+        const w = font.widthOfTextAtSize(content, size);
+        const lh = size * (run.font.lineHeight || 1.2);
+        runs.push({
+          font,
+          size,
+          content,
+          color: this.hexToRgb(run.color || "#000000"),
+          width: w,
+        });
+        totalWidth += w;
+        maxFontSize = Math.max(maxFontSize, size);
+        maxLineHeight = Math.max(maxLineHeight, lh);
+      }
+
+      const height = maxLineHeight;
+      const leading = maxLineHeight - maxFontSize;
+      return {
+        height,
+        render: (left, topY, width) => {
+          let startX = left;
+          if (align === "center") startX = left + (width - totalWidth) / 2;
+          else if (align === "right") startX = left + (width - totalWidth);
+          let cursor = startX;
+          for (const r of runs) {
+            const ascent = r.font.heightAtSize(r.size, { descender: false });
+            const baseline = topY - ascent - leading / 2;
+            this.page.drawText(r.content, {
+              x: cursor,
+              y: baseline,
+              size: r.size,
+              font: r.font,
+              color: rgb(r.color.r / 255, r.color.g / 255, r.color.b / 255),
+            });
+            cursor += r.width;
+          }
+        },
+      };
+    }
+
+    // Wrapping text paragraph
+    const font = await this.ensureFont(child.font);
+    const baseSize = child.font.size;
+    const lineHeight = child.font.lineHeight || 1.2;
+    const content = this.applyTemplate(child.content, item);
+    const { lines, fontSize } = this.wrapText(
+      content,
+      font,
+      baseSize,
+      boxW,
+      child.autoSize,
+    );
+    const totalLineHeight = fontSize * lineHeight;
+    const leading = totalLineHeight - fontSize;
+    const color = this.hexToRgb(child.color || "#000000");
+    const height = lines.length * totalLineHeight;
+
+    return {
+      height,
+      render: (left, topY, width) => {
+        const ascent = font.heightAtSize(fontSize, { descender: false });
+        for (let i = 0; i < lines.length; i++) {
+          const lineWidth = font.widthOfTextAtSize(lines[i], fontSize);
+          let x = left;
+          if (align === "center") x = left + (width - lineWidth) / 2;
+          else if (align === "right") x = left + (width - lineWidth);
+          const baseline = topY - leading / 2 - ascent - i * totalLineHeight;
+          this.page.drawText(lines[i], {
+            x,
+            y: baseline,
+            size: fontSize,
+            font,
+            color: rgb(color.r / 255, color.g / 255, color.b / 255),
+          });
+        }
+      },
+    };
+  }
+
+  /**
+   * Draw a textbox element: a positioned box containing stacked paragraphs,
+   * with horizontal (textAlign) and vertical (verticalAlign) alignment.
+   */
+  async drawTextbox(element, item, labelX, labelY, labelHeight) {
+    try {
+      const boxLeft = labelX + this.mmToPoints(parseMm(element.left));
+      const boxW = this.mmToPoints(parseMm(element.width));
+      const boxH = this.mmToPoints(parseMm(element.height));
+      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const defaultAlign = element.textAlign || "left";
+      const valign = element.verticalAlign || "top";
+      const children = element.children || [];
+
+      const paras = [];
+      let contentHeight = 0;
+      for (const child of children) {
+        if (child.type && child.type !== "text") continue;
+        const topPad = this.mmToPoints(parseMm(child.topPadding || 0));
+        const botPad = this.mmToPoints(parseMm(child.bottomPadding || 0));
+        const layout = await this.layoutParagraph(
+          child,
+          item,
+          boxW,
+          defaultAlign,
+        );
+        paras.push({ layout, topPad, botPad });
+        contentHeight += topPad + layout.height + botPad;
+      }
+
+      let offset = 0;
+      if (valign === "center") offset = (boxH - contentHeight) / 2;
+      else if (valign === "bottom") offset = boxH - contentHeight;
+      if (offset < 0) offset = 0;
+
+      let cursorTopY = boxTopY - offset;
+      for (const { layout, topPad, botPad } of paras) {
+        cursorTopY -= topPad;
+        layout.render(boxLeft, cursorTopY, boxW);
+        cursorTopY -= layout.height + botPad;
+      }
+    } catch (error) {
+      console.error("Error drawing textbox:", error);
+    }
+  }
+
+  /**
+   * Draw a QR code element generated from its text.
+   */
+  async drawQrCode(element, item, labelX, labelY, labelHeight) {
+    try {
+      const text = this.applyTemplate(element.text || "", item);
+      if (!text) return;
+
+      const boxX = labelX + this.mmToPoints(parseMm(element.left));
+      const w = this.mmToPoints(parseMm(element.width));
+      const h = this.mmToPoints(parseMm(element.height));
+      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+
+      const pixelSize = Math.max(64, Math.round(Math.max(w, h) * 4));
+      const dataUrl = await QRCode.toDataURL(text, {
+        margin: 0,
+        width: pixelSize,
+        errorCorrectionLevel: "M",
+        color: { dark: "#000000", light: "#ffffff" },
+      });
+      const img = await this.pdfDoc.embedPng(dataUrlToBytes(dataUrl));
+
+      this.page.drawImage(img, {
+        x: boxX,
+        y: boxTopY - h,
+        width: w,
+        height: h,
+      });
+    } catch (error) {
+      console.error("Error drawing QR code:", error);
+    }
   }
 
   /**

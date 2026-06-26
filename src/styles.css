@@ -149,6 +149,28 @@ h3 {
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Image folder selector */
+.folder-selector {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.folder-selector label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.folder-selector small {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted, #666);
+}
+
 /* Upload Area */
 .upload-area {
   border: 2px dashed var(--border-color);

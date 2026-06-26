@@ -19,10 +19,27 @@ export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
       parts = line.split(",").map((p) => p.trim());
     }
 
-    let entry = { vorname: "", name: "", function: "", zusatz: "" };
+    let entry = { vorname: "", name: "", function: "", zusatz: "", image: "" };
 
     // Parse according to selected format
     switch (format) {
+      case "vorname-name-image":
+        // Vorname[TAB]Name[TAB]Image (filename referenced in image folder)
+        if (parts.length >= 1 && parts[0]) {
+          entry.vorname = parts[0];
+          entry.name = parts[1] || "";
+          entry.image = parts[2] || "";
+        }
+        break;
+
+      case "name-image":
+        // Name[TAB]Image (filename referenced in image folder)
+        if (parts.length >= 1 && parts[0]) {
+          entry.name = parts[0];
+          entry.image = parts[1] || "";
+        }
+        break;
+
       case "name-vorname-funktion-zusatz":
         // Name[TAB]Vorname[TAB]Funktion(optional)[TAB]Zusatz(optional)
         if (parts.length >= 1 && parts[0]) {

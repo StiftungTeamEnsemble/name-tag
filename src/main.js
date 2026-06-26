@@ -3,9 +3,46 @@ import { PdfGenerator } from "./utils/pdfGenerator.js";
 import { PdfPreviewManager } from "./utils/pdfPreviewManager.js";
 import { getAvailableLayouts, getLayoutConfig, assetPaths } from "./config.js";
 
+/**
+ * Recursively check whether a layout uses face detection on any element.
+ */
+function layoutUsesFaceDetection(elements) {
+  if (!Array.isArray(elements)) return false;
+  return elements.some(
+    (el) => el.faceDetect || layoutUsesFaceDetection(el.children),
+  );
+}
+
+/**
+ * Build a PdfGenerator for the given layout, wiring the image loader and
+ * (when the layout needs it) the browser face detector.
+ */
+async function buildGenerator(layoutConfig) {
+  let faceDetector = null;
+  if (layoutUsesFaceDetection(layoutConfig.elements)) {
+    if (!imageFiles) {
+      throw new Error(
+        "Dieses Layout nutzt Gesichtserkennung – bitte zuerst einen Bildordner auswählen.",
+      );
+    }
+    showSuccess("Gesichtserkennung wird geladen…");
+    // Lazy-loaded so the large face-detection library is only fetched on demand.
+    const { createBrowserFaceDetector } = await import(
+      "./utils/faceDetectorBrowser.js"
+    );
+    faceDetector = await createBrowserFaceDetector();
+  }
+  return new PdfGenerator(nameTagData, layoutConfig, null, assetPaths, {
+    imageLoader: buildImageLoader(),
+    faceDetector,
+  });
+}
+
 let nameTagData = [];
 let pdfGenerator = null;
 let pdfPreviewManager = null;
+// Map of lowercased filename -> async () => ArrayBuffer for the selected image folder
+let imageFiles = null;
 
 // DOM Elements
 const csvFile = document.getElementById("csvFile");
@@ -18,6 +55,9 @@ const previewTable = document.getElementById("previewTable");
 const previewBody = document.getElementById("previewBody");
 const noPreview = document.getElementById("noPreview");
 const layoutSelect = document.getElementById("layoutSelect");
+const selectFolderBtn = document.getElementById("selectFolderBtn");
+const folderInput = document.getElementById("folderInput");
+const folderStatus = document.getElementById("folderStatus");
 const generateBtn = document.getElementById("generateBtn");
 const previewPdfBtn = document.getElementById("previewPdfBtn");
 const previewModal = document.getElementById("previewModal");
@@ -58,6 +98,12 @@ const formatConfigurations = {
       "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tDirektor\tAbteilung A\nMusterfrau\tManagerin\t",
     hint: "Format: Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
   },
+  "vorname-name-image": {
+    label: "Vorname[TAB]Name[TAB]Bilddatei (für Badge-Layout)",
+    manual:
+      "Namen und Bilddateien eingeben\nFormat: Vorname[TAB]Name[TAB]Bilddatei\n\nBeispiel:\nMax\tMustermann\tMax_Mustermann.jpg\nErika\tMusterfrau\tErika_Musterfrau.jpg",
+    hint: "Format: Vorname[TAB]Name[TAB]Bilddatei (Dateiname im gewählten Bildordner)",
+  },
 };
 
 // Initialize
@@ -92,6 +138,59 @@ updatePlaceholders();
 
 // Listen for format changes
 formatSelect.addEventListener("change", updatePlaceholders);
+
+// Image folder selection.
+// Prefer the File System Access API (showDirectoryPicker); fall back to a
+// <input webkitdirectory> for browsers that don't support it (Firefox/Safari).
+selectFolderBtn.addEventListener("click", async () => {
+  if (window.showDirectoryPicker) {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+      const map = new Map();
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind === "file") {
+          map.set(entry.name.normalize("NFC").toLowerCase(), async () => {
+            const file = await entry.getFile();
+            return await file.arrayBuffer();
+          });
+        }
+      }
+      imageFiles = map;
+      folderStatus.textContent = `${map.size} Bilder geladen (${dirHandle.name})`;
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        showError(`Fehler beim Auswählen des Ordners: ${error.message}`);
+      }
+    }
+  } else {
+    // Fallback for browsers without the File System Access API
+    folderInput.click();
+  }
+});
+
+folderInput.addEventListener("change", () => {
+  const files = Array.from(folderInput.files || []);
+  if (files.length === 0) return;
+  const map = new Map();
+  for (const file of files) {
+    map.set(
+      file.name.normalize("NFC").toLowerCase(),
+      async () => await file.arrayBuffer(),
+    );
+  }
+  imageFiles = map;
+  folderStatus.textContent = `${map.size} Bilder geladen`;
+});
+
+// Build an image loader that resolves a CSV filename (case-insensitive) to bytes
+function buildImageLoader() {
+  if (!imageFiles) return null;
+  return async (filename) => {
+    if (!filename) return null;
+    const getter = imageFiles.get(filename.normalize("NFC").toLowerCase());
+    return getter ? await getter() : null;
+  };
+}
 
 // Tab switching
 tabButtons.forEach((btn) => {
@@ -236,9 +335,9 @@ generateBtn.addEventListener("click", async () => {
 
   const layoutName = layoutSelect.value;
   const layoutConfig = getLayoutConfig(layoutName);
-  pdfGenerator = new PdfGenerator(nameTagData, layoutConfig, null, assetPaths);
 
   try {
+    pdfGenerator = await buildGenerator(layoutConfig);
     await pdfGenerator.generate();
     showSuccess("PDF erfolgreich generiert!");
   } catch (error) {
@@ -255,9 +354,9 @@ previewPdfBtn.addEventListener("click", async () => {
 
   const layoutName = layoutSelect.value;
   const layoutConfig = getLayoutConfig(layoutName);
-  pdfGenerator = new PdfGenerator(nameTagData, layoutConfig, null, assetPaths);
 
   try {
+    pdfGenerator = await buildGenerator(layoutConfig);
     const pdfBytes = await pdfGenerator.generateBytes();
     pdfPreviewManager = new PdfPreviewManager(pdfBytes);
     await pdfPreviewManager.init();
