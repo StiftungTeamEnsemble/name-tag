@@ -166,7 +166,7 @@ export function createLabelLayouts(assetPaths) {
             topPadding: 1,
             bottomPadding: 0,
             font: {
-              size: 9,
+              size: 10,
               file: "geistRegular",
               name: "Geist-Regular",
               style: "normal",
