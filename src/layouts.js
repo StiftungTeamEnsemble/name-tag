@@ -111,6 +111,15 @@ export function createLabelLayouts(assetPaths) {
     cropMarks: true,
     elements: [
       {
+        // Small gray registration dot near the top center.
+        type: "circle",
+        left: "44.75mm",
+        top: "7.75mm",
+        width: "0.5mm",
+        height: "0.5mm",
+        color: "#808080",
+      },
+      {
         type: "mask",
         left: "7.50mm",
         top: "14.00mm",

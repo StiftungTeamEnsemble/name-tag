@@ -231,6 +231,8 @@ export class PdfGenerator {
         await this.drawTextbox(element, item, x, y, labelHeight);
       } else if (element.type === "qrcode") {
         await this.drawQrCode(element, item, x, y, labelHeight);
+      } else if (element.type === "circle" || element.type === "ellipse") {
+        this.drawCircle(element, x, y, labelHeight);
       }
     }
 
@@ -1189,6 +1191,31 @@ export class PdfGenerator {
       });
     } catch (error) {
       console.error("Error drawing QR code:", error);
+    }
+  }
+
+  /**
+   * Draw a filled circle/ellipse element. left/top/width/height use the same
+   * top-left mm semantics as the other elements; `color` is a hex fill color
+   * (default gray).
+   */
+  drawCircle(element, labelX, labelY, labelHeight) {
+    try {
+      const w = this.mmToPoints(parseMm(element.width));
+      const h = this.mmToPoints(parseMm(element.height));
+      const boxX = labelX + this.mmToPoints(parseMm(element.left));
+      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const color = this.hexToRgb(element.color || "#808080");
+
+      this.page.drawEllipse({
+        x: boxX + w / 2,
+        y: boxTopY - h / 2,
+        xScale: w / 2,
+        yScale: h / 2,
+        color: rgb(color.r / 255, color.g / 255, color.b / 255),
+      });
+    } catch (error) {
+      console.error("Error drawing circle:", error);
     }
   }
 
