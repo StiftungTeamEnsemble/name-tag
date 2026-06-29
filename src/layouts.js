@@ -137,15 +137,16 @@ export function createLabelLayouts(assetPaths) {
       },
       {
         type: "textbox",
-        left: "0.00mm",
-        top: "93.00mm",
-        width: "90.00mm",
+        left: "5.00mm",
+        top: "91.5mm",
+        width: "80.00mm",
         height: "24.00mm",
         textAlign: "center",
-        verticalAlign: "center",
+        verticalAlign: "top",
         children: [
           {
             type: "text",
+            bottomPadding: "2mm",
             content: "{{displayName}}",
             autoSize: true,
             font: {
@@ -153,7 +154,23 @@ export function createLabelLayouts(assetPaths) {
               file: "geistSemiBold",
               name: "Geist-SemiBold",
               style: "normal",
-              lineHeight: 1.15,
+              lineHeight: 1.1,
+            },
+            color: "#000000",
+            width: "80.00mm",
+            autoSize: true,
+          },
+          {
+            type: "text",
+            content: "{{addition}}",
+            topPadding: 1,
+            bottomPadding: 0,
+            font: {
+              size: 9,
+              file: "geistRegular",
+              name: "Geist-Regular",
+              style: "normal",
+              lineHeight: 1.2,
             },
             color: "#000000",
           },
@@ -162,7 +179,7 @@ export function createLabelLayouts(assetPaths) {
       {
         type: "textbox",
         left: "0mm",
-        top: "123.5mm",
+        top: "123.25mm",
         width: "65.5mm",
         height: "11.00mm",
         textAlign: "right",
@@ -172,7 +189,7 @@ export function createLabelLayouts(assetPaths) {
             type: "text",
             runs: [
               {
-                content: "Bleib im Kontakt mit ",
+                content: "Bleib im Kontakt mit",
                 font: {
                   size: 8,
                   file: "geistRegular",
@@ -183,7 +200,7 @@ export function createLabelLayouts(assetPaths) {
                 color: "#000000",
               },
               {
-                content: "Team Ensemble",
+                content: " Team Ensemble",
                 font: {
                   size: 10,
                   file: "geistSemiBold",

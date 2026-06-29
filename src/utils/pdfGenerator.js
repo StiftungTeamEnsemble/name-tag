@@ -1022,6 +1022,7 @@ export class PdfGenerator {
       let totalWidth = 0;
       let maxFontSize = 0;
       let maxLineHeight = 0;
+      let maxAscent = 0;
       for (const run of child.runs) {
         const font = await this.ensureFont(run.font);
         const size = run.font.size;
@@ -1038,10 +1039,19 @@ export class PdfGenerator {
         totalWidth += w;
         maxFontSize = Math.max(maxFontSize, size);
         maxLineHeight = Math.max(maxLineHeight, lh);
+        // Tallest ascent drives the shared baseline so mixed sizes line up.
+        maxAscent = Math.max(
+          maxAscent,
+          font.heightAtSize(size, { descender: false }),
+        );
       }
 
       const height = maxLineHeight;
       const leading = maxLineHeight - maxFontSize;
+      // Single baseline shared by all runs (relative to the line's top), so runs
+      // of different font sizes sit on the same baseline instead of being
+      // aligned at their tops.
+      const baselineFromTop = maxAscent + leading / 2;
       return {
         height,
         render: (left, topY, width) => {
@@ -1049,9 +1059,8 @@ export class PdfGenerator {
           if (align === "center") startX = left + (width - totalWidth) / 2;
           else if (align === "right") startX = left + (width - totalWidth);
           let cursor = startX;
+          const baseline = topY - baselineFromTop;
           for (const r of runs) {
-            const ascent = r.font.heightAtSize(r.size, { descender: false });
-            const baseline = topY - ascent - leading / 2;
             this.page.drawText(r.content, {
               x: cursor,
               y: baseline,
