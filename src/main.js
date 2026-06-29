@@ -1,4 +1,4 @@
-import { parseCSV } from "./utils/csvParser.js";
+import { parseCSV, createBlankEntries } from "./utils/csvParser.js";
 import { PdfGenerator } from "./utils/pdfGenerator.js";
 import { PdfPreviewManager } from "./utils/pdfPreviewManager.js";
 import { getAvailableLayouts, getLayoutConfig, assetPaths } from "./config.js";
@@ -32,7 +32,11 @@ async function buildGenerator(layoutConfig) {
     );
     faceDetector = await createBrowserFaceDetector();
   }
-  return new PdfGenerator(nameTagData, layoutConfig, null, assetPaths, {
+  // Append blank tags (to fill in by hand) requested in the UI.
+  const emptyCount = parseInt(emptyTags?.value, 10) || 0;
+  const data = nameTagData.concat(createBlankEntries(emptyCount));
+
+  return new PdfGenerator(data, layoutConfig, null, assetPaths, {
     imageLoader: buildImageLoader(),
     faceDetector,
   });
@@ -58,6 +62,7 @@ const layoutSelect = document.getElementById("layoutSelect");
 const selectFolderBtn = document.getElementById("selectFolderBtn");
 const folderInput = document.getElementById("folderInput");
 const folderStatus = document.getElementById("folderStatus");
+const emptyTags = document.getElementById("emptyTags");
 const generateBtn = document.getElementById("generateBtn");
 const previewPdfBtn = document.getElementById("previewPdfBtn");
 const previewModal = document.getElementById("previewModal");

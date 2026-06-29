@@ -86,3 +86,19 @@ export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
 
   return data;
 }
+
+/**
+ * Create blank entries (no name/photo), useful for tags to fill in by hand.
+ * @param {number} count - how many blank entries to create
+ * @returns {Array} array of empty entry objects
+ */
+export function createBlankEntries(count) {
+  const n = Math.max(0, parseInt(count, 10) || 0);
+  return Array.from({ length: n }, () => ({
+    vorname: "",
+    name: "",
+    function: "",
+    addition: "",
+    image: "",
+  }));
+}

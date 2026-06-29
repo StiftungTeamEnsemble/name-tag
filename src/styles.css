@@ -171,6 +171,30 @@ h3 {
   color: var(--text-muted, #666);
 }
 
+/* Empty tags selector */
+.empty-selector {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.empty-selector label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.empty-selector input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
 /* Upload Area */
 .upload-area {
   border: 2px dashed var(--border-color);

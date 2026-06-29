@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync, readdirSync } from "fs";
 import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { parseCSV } from "./utils/csvParser.js";
+import { parseCSV, createBlankEntries } from "./utils/csvParser.js";
 import { PdfGenerator } from "./utils/pdfGenerator.js";
 import { NodeResourceLoader } from "./utils/resourceLoader.js";
 import { createNodeFaceDetector } from "./utils/faceDetectorNode.js";
@@ -80,6 +80,8 @@ Options:
   --image-dir <dir>    Folder containing images referenced by filename in the CSV
                        (used by the badge layout's photo / {{image}} field)
 
+  --empty <n>          Append <n> blank tags at the end (to fill in by hand)
+
   --help              Show this help message
 
 Examples:
@@ -108,6 +110,7 @@ function parseArguments(args) {
     layout: "zweckform-L4785-20",
     output: null,
     imageDir: null,
+    empty: 0,
   };
 
   for (let i = 2; i < args.length; i++) {
@@ -124,6 +127,8 @@ function parseArguments(args) {
       options.output = args[++i];
     } else if (arg === "--image-dir") {
       options.imageDir = args[++i];
+    } else if (arg === "--empty") {
+      options.empty = parseInt(args[++i], 10) || 0;
     } else if (!arg.startsWith("--")) {
       // First non-flag argument is the CSV file
       options.csvFile = arg;
@@ -164,6 +169,12 @@ async function main() {
   } catch (error) {
     console.error(`Error parsing CSV: ${error.message}`);
     process.exit(1);
+  }
+
+  // Append blank tags to fill in by hand
+  if (options.empty > 0) {
+    nameTagData = nameTagData.concat(createBlankEntries(options.empty));
+    console.log(`Added ${options.empty} blank tag(s)`);
   }
 
   // Generate output filename if not specified
