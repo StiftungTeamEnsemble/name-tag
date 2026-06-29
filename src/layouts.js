@@ -161,12 +161,12 @@ export function createLabelLayouts(assetPaths) {
       },
       {
         type: "textbox",
-        left: "5.00mm",
-        top: "126.00mm",
-        width: "65.75mm",
+        left: "0mm",
+        top: "123.5mm",
+        width: "65.5mm",
         height: "11.00mm",
         textAlign: "right",
-        verticalAlign: "center",
+        verticalAlign: "top",
         children: [
           {
             type: "text",
@@ -185,7 +185,7 @@ export function createLabelLayouts(assetPaths) {
               {
                 content: "Team Ensemble",
                 font: {
-                  size: 8,
+                  size: 10,
                   file: "geistSemiBold",
                   name: "Geist-SemiBold",
                   style: "normal",
@@ -199,11 +199,11 @@ export function createLabelLayouts(assetPaths) {
       },
       {
         type: "qrcode",
-        left: "73.75mm",
-        top: "126.00mm",
-        width: "11.00mm",
-        height: "11.00mm",
-        text: "https://www.example.com",
+        left: "68.5mm",
+        top: "121mm",
+        width: "10.5mm",
+        height: "10.5mm",
+        text: "https://link.team-ensemble.ch/qmPzVA",
       },
     ],
   };

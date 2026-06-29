@@ -129,7 +129,9 @@ CLI options:
 
 - Badge size: 90 × 135 mm
 - 3 badges per A4 **landscape** sheet, side by side with **0 mm gap**, centered
-- **Crop marks** at every badge corner
+- **Crop marks**: computed once for the whole imposition; a mark is drawn only
+  if it doesn't intrude into a neighbouring badge, so shared cut lines get a
+  single mark and the outer edges keep their marks
 - Each badge contains:
   - a **circular masked photo** (75 × 75 mm), loaded by filename from the image
     folder (`--image-dir` / "Bildordner auswählen" in the web UI)

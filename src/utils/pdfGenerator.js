@@ -185,7 +185,7 @@ export class PdfGenerator {
             ) -
             this.mmToPoints(this.layout.labelHeight);
 
-          await this.drawLabel(this.data[labelIndex], x, y);
+          await this.drawLabel(this.data[labelIndex], x, y, rowIdx, colIdx);
           labelIndex++;
         }
 
@@ -199,7 +199,7 @@ export class PdfGenerator {
   /**
    * Draw a single label with configured elements
    */
-  async drawLabel(item, x, y) {
+  async drawLabel(item, x, y, rowIdx = 0, colIdx = 0) {
     const labelWidth = this.mmToPoints(this.layout.labelWidth);
     const labelHeight = this.mmToPoints(this.layout.labelHeight);
 
@@ -236,68 +236,118 @@ export class PdfGenerator {
 
     // Draw crop marks last so they sit on top
     if (this.layout.cropMarks) {
-      this.drawCropMarks(x, y, labelWidth, labelHeight);
+      const marks = this.getCropMarksForCell(rowIdx, colIdx);
+      for (const m of marks) {
+        this.page.drawLine({
+          start: { x: x + m.dx1, y: y + m.dy1 },
+          end: { x: x + m.dx2, y: y + m.dy2 },
+          thickness: 0.25,
+          color: rgb(0, 0, 0),
+        });
+      }
     }
   }
 
   /**
-   * Draw printer crop marks at the four corners of a label.
-   *
-   * Marks always extend outward from the trim box, separated by a gap, so they
-   * never touch the badge's final format. When labels are packed too tightly to
-   * fit a mark in the gap between them, the marks that would point into a
-   * neighbour are omitted:
-   *   - vertical marks (which indicate a vertical cut) are kept unless the rows
-   *     are too close together,
-   *   - horizontal marks (which indicate a horizontal cut) are kept unless the
-   *     columns are too close together.
+   * Crop marks for a grid cell (computed once per layout, cached). Returns the
+   * line segments to draw relative to the cell's bottom-left corner (points).
    */
-  drawCropMarks(x, y, labelWidth, labelHeight) {
+  getCropMarksForCell(rowIdx, colIdx) {
+    if (!this._cropMarksByCell) {
+      this._cropMarksByCell = this.computeCropMarks();
+    }
+    return this._cropMarksByCell.get(`${rowIdx},${colIdx}`) || [];
+  }
+
+  /**
+   * Compute crop marks for the whole imposition grid, once per layout.
+   *
+   * The approach: generate every candidate crop mark for every cell in the
+   * grid, then keep a mark only if it does not touch any badge's trim box. This
+   * keeps the outer marks (which reach into the page margins) while dropping any
+   * mark that would intrude into a neighbouring badge — independent of page,
+   * gap size or orientation.
+   *
+   * Marks are returned in a Map keyed by "row,col", as segments expressed
+   * relative to each cell's bottom-left corner (PDF points, y-up).
+   */
+  computeCropMarks() {
+    const result = new Map();
+    const cols = this.layout.columns;
+    const rows = this.layout.rows;
+    const lw = this.mmToPoints(this.layout.labelWidth);
+    const lh = this.mmToPoints(this.layout.labelHeight);
+    const gx = this.mmToPoints(this.layout.rowGap); // horizontal gap
+    const gy = this.mmToPoints(this.layout.columnGap); // vertical gap
     const gap = this.mmToPoints(2); // gap between trim and mark
-    const len = this.mmToPoints(4); // length of each mark
-    const color = rgb(0, 0, 0);
-    const thickness = 0.25;
+    const len = this.mmToPoints(4); // mark length
+    const eps = 1e-6;
 
-    // A mark needs (gap + len) of clearance on each side to stay clear of an
-    // adjacent badge's trim, so a between-badge space below 2*(gap+len) is "tight".
-    const minSpacing = 2 * (this.mmToPoints(2) + this.mmToPoints(4));
-    const horizontallyTight =
-      this.layout.columns > 1 && this.mmToPoints(this.layout.rowGap) < minSpacing;
-    const verticallyTight =
-      this.layout.rows > 1 &&
-      this.mmToPoints(this.layout.columnGap) < minSpacing;
-
-    const left = x;
-    const right = x + labelWidth;
-    const bottom = y;
-    const top = y + labelHeight;
-
-    const line = (x1, y1, x2, y2) =>
-      this.page.drawLine({
-        start: { x: x1, y: y1 },
-        end: { x: x2, y: y2 },
-        thickness,
-        color,
-      });
-
-    // For each corner: one vertical mark + one horizontal mark, both outside the trim
-    const corners = [
-      { cx: left, cy: top, hDir: -1, vDir: 1 }, // top-left
-      { cx: right, cy: top, hDir: 1, vDir: 1 }, // top-right
-      { cx: left, cy: bottom, hDir: -1, vDir: -1 }, // bottom-left
-      { cx: right, cy: bottom, hDir: 1, vDir: -1 }, // bottom-right
-    ];
-
-    for (const { cx, cy, hDir, vDir } of corners) {
-      // Vertical mark (extends above/below the corner) — marks a vertical cut
-      if (!verticallyTight) {
-        line(cx, cy + vDir * gap, cx, cy + vDir * (gap + len));
-      }
-      // Horizontal mark (extends left/right of the corner) — marks a horizontal cut
-      if (!horizontallyTight) {
-        line(cx + hDir * gap, cy, cx + hDir * (gap + len), cy);
+    // All badge trim rects in the grid (top-origin frame, y increasing down).
+    const rects = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const left = c * (lw + gx);
+        const top = r * (lh + gy);
+        rects.push({ left, top, right: left + lw, bottom: top + lh });
       }
     }
+
+    // True if an axis-aligned segment touches/overlaps any badge trim rect.
+    const touchesAnyBadge = (seg) => {
+      const minX = Math.min(seg.x1, seg.x2);
+      const maxX = Math.max(seg.x1, seg.x2);
+      const minY = Math.min(seg.y1, seg.y2);
+      const maxY = Math.max(seg.y1, seg.y2);
+      return rects.some(
+        (rc) =>
+          minX <= rc.right + eps &&
+          rc.left - eps <= maxX &&
+          minY <= rc.bottom + eps &&
+          rc.top - eps <= maxY,
+      );
+    };
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const left = c * (lw + gx);
+        const top = r * (lh + gy);
+        const right = left + lw;
+        const bottom = top + lh;
+
+        // 8 candidate marks (grid frame, y down): per corner one vertical and
+        // one horizontal mark, each offset outward from the trim by `gap`.
+        const candidates = [
+          // top-left
+          { x1: left, y1: top - gap, x2: left, y2: top - gap - len },
+          { x1: left - gap, y1: top, x2: left - gap - len, y2: top },
+          // top-right
+          { x1: right, y1: top - gap, x2: right, y2: top - gap - len },
+          { x1: right + gap, y1: top, x2: right + gap + len, y2: top },
+          // bottom-left
+          { x1: left, y1: bottom + gap, x2: left, y2: bottom + gap + len },
+          { x1: left - gap, y1: bottom, x2: left - gap - len, y2: bottom },
+          // bottom-right
+          { x1: right, y1: bottom + gap, x2: right, y2: bottom + gap + len },
+          { x1: right + gap, y1: bottom, x2: right + gap + len, y2: bottom },
+        ];
+
+        const kept = [];
+        for (const seg of candidates) {
+          if (touchesAnyBadge(seg)) continue;
+          // Convert to cell-relative, y-up (cell bottom-left = grid (left, bottom)).
+          kept.push({
+            dx1: seg.x1 - left,
+            dy1: bottom - seg.y1,
+            dx2: seg.x2 - left,
+            dy2: bottom - seg.y2,
+          });
+        }
+        result.set(`${r},${c}`, kept);
+      }
+    }
+
+    return result;
   }
 
   /**
