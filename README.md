@@ -96,7 +96,7 @@ node src/cli.js data.csv --layout zweckform-L4785-20-no-logo
 
 # Generate 90×135mm photo badges (3-up on A4 landscape, with crop marks)
 node src/cli.js DATA/example-badges.csv \
-  --format vorname-name-image \
+  --format name-addition-image \
   --layout team-ensemble-badge-90x135 \
   --image-dir DATA \
   --output badges.pdf
@@ -139,7 +139,7 @@ CLI options:
   - a "Bleib im Kontakt mit **Team Ensemble**" footer
   - a **QR code** (generated with the `qrcode` package)
 
-Use it with the `vorname-name-image` CSV format. A debug variant
+Use it with the `name-addition-image` CSV format. A debug variant
 `team-ensemble-badge-90x135-debug` draws the badge outlines.
 
 ##### Face detection
@@ -165,7 +165,7 @@ Per-`imageData` tunables (with defaults): `faceHeightFraction` (0.6),
 
 ```bash
 node src/cli.js DATA/example-badges.csv \
-  --format vorname-name-image \
+  --format name-addition-image \
   --layout team-ensemble-badge-90x135-face \
   --image-dir DATA \
   --output badges.pdf

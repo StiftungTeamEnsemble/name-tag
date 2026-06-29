@@ -23,11 +23,11 @@ export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
 
     // Parse according to selected format
     switch (format) {
-      case "vorname-name-image":
-        // Vorname[TAB]Name[TAB]Image (filename referenced in image folder)
+      case "name-addition-image":
+        // Name[TAB]Addition(optional)[TAB]Image (filename referenced in image folder)
         if (parts.length >= 1 && parts[0]) {
-          entry.vorname = parts[0];
-          entry.name = parts[1] || "";
+          entry.name = parts[0];
+          entry.addition = parts[1] || "";
           entry.image = parts[2] || "";
         }
         break;

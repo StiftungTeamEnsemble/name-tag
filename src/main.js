@@ -98,11 +98,11 @@ const formatConfigurations = {
       "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tDirektor\tAbteilung A\nMusterfrau\tManagerin\t",
     hint: "Format: Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
   },
-  "vorname-name-image": {
-    label: "Vorname[TAB]Name[TAB]Bilddatei (für Badge-Layout)",
+  "name-addition-image": {
+    label: "Name[TAB]Zusatz (optional)[TAB]Bilddatei (für Badge-Layout)",
     manual:
-      "Namen und Bilddateien eingeben\nFormat: Vorname[TAB]Name[TAB]Bilddatei\n\nBeispiel:\nMax\tMustermann\tMax_Mustermann.jpg\nErika\tMusterfrau\tErika_Musterfrau.jpg",
-    hint: "Format: Vorname[TAB]Name[TAB]Bilddatei (Dateiname im gewählten Bildordner)",
+      "Namen und Bilddateien eingeben\nFormat: Name[TAB]Zusatz[TAB]Bilddatei\n\nBeispiel:\nMax Mustermann\tMuster AG\tMax_Mustermann.jpg\nErika Musterfrau\tBeispiel GmbH\tErika_Musterfrau.jpg",
+    hint: "Format: Name[TAB]Zusatz (optional)[TAB]Bilddatei (Dateiname im gewählten Bildordner)",
   },
 };
 

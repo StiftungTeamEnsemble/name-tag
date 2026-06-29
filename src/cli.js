@@ -63,7 +63,7 @@ Options:
                          - name-vorname-funktion-zusatz
                          - vorname-name-funktion-zusatz
                          - name-funktion-zusatz
-                         - vorname-name-image   (for badge layout)
+                         - name-addition-image  (for badge layout)
                          - name-image           (for badge layout)
 
   --layout <layout>    Label layout name (default: zweckform-L4785-20)
@@ -94,7 +94,7 @@ Examples:
 
   # Generate 90x135mm badges (3-up on A4 landscape) with photos from a folder
   name-tag-cli DATA/example-badges.csv \\
-    --format vorname-name-image \\
+    --format name-addition-image \\
     --layout team-ensemble-badge-90x135 \\
     --image-dir DATA \\
     --output badges.pdf
