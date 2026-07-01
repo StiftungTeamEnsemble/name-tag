@@ -28,15 +28,27 @@
 
             <!-- Format Selection -->
             <div class="format-selector">
-              <label for="formatSelect">Datenformat:</label>
-              <select id="formatSelect"></select>
+              <div class="format-selector-header">
+                <label>Datenfelder</label>
+              </div>
+              <ul id="fieldOrderList" class="field-order-list"></ul>
+              <small id="formatHint"
+                >Aktive Felder entsprechen den Spalten von links nach rechts.</small
+              >
+            </div>
+
+            <div class="sort-selector">
+              <label for="sortSelect">Sortierung:</label>
+              <select id="sortSelect">
+                <option value="">Reihenfolge der TSV/CSV behalten</option>
+              </select>
             </div>
 
             <!-- Manual Input -->
             <div id="manual-tab" class="tab-content active">
               <textarea
                 id="manualInput"
-                placeholder="Namen und Funktionen eingeben&#10;Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz&#10;&#10;Beispiel:&#10;Mustermann	Max	Direktor	Abteilung A&#10;Musterfrau	Erika	Managerin	"
+                placeholder="Daten einfügen&#10;Eine Zeile pro Schild, Spalten mit Tab getrennt&#10;&#10;Beispiel:&#10;Max	Mustermann	Direktor	Abteilung A&#10;Erika	Musterfrau	Managerin	"
               ></textarea>
             </div>
 
@@ -54,11 +66,8 @@
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
                 <p>CSV-Datei hierher ziehen oder klicken zum Auswählen</p>
-                <small id="formatHint"
-                  >Format: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz (beide
-                  optional)</small
-                >
-                <input type="file" id="csvFile" accept=".csv" hidden />
+                <small>TSV, CSV oder Textdatei</small>
+                <input type="file" id="csvFile" accept=".csv,.tsv,.txt" hidden />
               </div>
             </div>
 
@@ -77,6 +86,7 @@
                     <th>Name</th>
                     <th>Funktion</th>
                     <th>Zusatz</th>
+                    <th>Bild</th>
                     <th>Aktion</th>
                   </tr>
                 </thead>
@@ -97,6 +107,13 @@
               <select id="layoutSelect">
                 <!-- Options populated dynamically from config.js -->
               </select>
+            </div>
+
+            <div class="line-selector">
+              <label>
+                <input type="checkbox" id="showLines" />
+                Linien anzeigen
+              </label>
             </div>
 
             <!-- Image folder selection (for badge layouts referencing photos) -->

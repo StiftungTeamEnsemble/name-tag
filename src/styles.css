@@ -117,8 +117,9 @@ h3 {
   display: block;
 }
 
-/* Format Selector */
-.format-selector {
+/* Format and sort controls */
+.format-selector,
+.sort-selector {
   margin-bottom: 20px;
   padding: 15px;
   background: white;
@@ -126,14 +127,83 @@ h3 {
   border: 1px solid var(--border-color);
 }
 
-.format-selector label {
+.format-selector label,
+.sort-selector label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
   color: var(--text-color);
 }
 
-.format-selector select {
+.format-selector-header label {
+  margin-bottom: 10px;
+}
+
+.field-order-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin-bottom: 10px;
+}
+
+.field-order-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: grab;
+}
+
+.field-order-item.dragging {
+  opacity: 0.55;
+}
+
+.field-order-item.drop-before::before,
+.field-order-item.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.field-order-item.drop-before::before {
+  top: -7px;
+}
+
+.field-order-item.drop-after::after {
+  bottom: -7px;
+}
+
+.field-order-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.field-order-item input {
+  width: auto;
+}
+
+.drag-handle {
+  color: var(--secondary-color);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sort-selector select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border-color);
@@ -143,7 +213,7 @@ h3 {
   cursor: pointer;
 }
 
-.format-selector select:focus {
+.sort-selector select:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
@@ -172,7 +242,8 @@ h3 {
 }
 
 /* Empty tags selector */
-.empty-selector {
+.empty-selector,
+.line-selector {
   margin-top: 15px;
   padding: 15px;
   background: white;
@@ -180,11 +251,23 @@ h3 {
   border: 1px solid var(--border-color);
 }
 
-.empty-selector label {
+.empty-selector label,
+.line-selector label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
   color: var(--text-color);
+}
+
+.line-selector label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.line-selector input {
+  width: auto;
 }
 
 .empty-selector input {

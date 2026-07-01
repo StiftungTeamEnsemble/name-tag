@@ -360,15 +360,31 @@ export class PdfGenerator {
     // Normalize visible text to NFC: source data (e.g. macOS filenames) can be
     // decomposed (NFD), which pdf-lib renders with mispositioned diacritics.
     const nfc = (v) => (v || "").normalize("NFC");
-    const displayName = `${item.vorname || ""} ${item.name || ""}`.trim();
-    return str
-      .replace(/\{\{name\}\}/g, nfc(item.name))
-      .replace(/\{\{displayName\}\}/g, nfc(displayName))
-      .replace(/\{\{vorname\}\}/g, nfc(item.vorname))
-      .replace(/\{\{function\}\}/g, nfc(item.function))
-      .replace(/\{\{addition\}\}/g, nfc(item.addition))
-      // image filename left un-normalized; loaders handle NFC matching themselves
-      .replace(/\{\{image\}\}/g, item.image || "");
+
+    return str.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_match, expression) => {
+      const joinMatch = expression.match(
+        /^join\s+((?:"[^"]+"\s*)+)(?:separator="([^"]*)")?$/,
+      );
+      if (joinMatch) {
+        const fields = [...joinMatch[1].matchAll(/"([^"]+)"/g)].map(
+          (match) => match[1],
+        );
+        const separator = joinMatch[2] ?? "";
+        return nfc(
+          fields
+            .map((field) => item[field] || "")
+            .filter(Boolean)
+            .join(separator),
+        );
+      }
+
+      const field = expression.trim();
+      if (field === "image") {
+        // Image filenames are left un-normalized; loaders handle NFC matching.
+        return item.image || "";
+      }
+      return nfc(item[field]);
+    });
   }
 
   /**
@@ -435,14 +451,7 @@ export class PdfGenerator {
     returnHeight = false,
   ) {
     try {
-      // Replace template variables
-      const displayName = `${item.vorname || ""} ${item.name || ""}`.trim();
-      let text = element.content
-        .replace("{{name}}", item.name || "")
-        .replace("{{displayName}}", displayName)
-        .replace("{{vorname}}", item.vorname || "")
-        .replace("{{function}}", item.function || "")
-        .replace("{{addition}}", item.addition || "");
+      const text = this.applyTemplate(element.content, item);
 
       // Skip rendering if text is empty after replacement
       if (!text.trim()) {

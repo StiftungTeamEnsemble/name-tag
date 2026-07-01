@@ -1,88 +1,107 @@
+const DEFAULT_FORMAT = "firstname,lastname,role,addition";
+export const KNOWN_FIELDS = [
+  "firstname",
+  "lastname",
+  "role",
+  "addition",
+  "image",
+];
+
+const SORT_FIELDS = [...KNOWN_FIELDS];
+
+function createEntry() {
+  return {
+    firstname: "",
+    lastname: "",
+    role: "",
+    addition: "",
+    image: "",
+  };
+}
+
+export function normalizeField(field) {
+  return String(field || "").trim().toLowerCase();
+}
+
+export function parseFormat(format = DEFAULT_FORMAT) {
+  const fields = String(format || DEFAULT_FORMAT)
+    .split(",")
+    .map(normalizeField)
+    .filter(Boolean);
+
+  if (fields.length === 0) {
+    throw new Error("Format must contain at least one field");
+  }
+
+  const invalid = fields.filter((field) => !KNOWN_FIELDS.includes(field));
+  if (invalid.length > 0) {
+    throw new Error(
+      `Unknown format field(s): ${invalid.join(", ")}. Known fields: ${KNOWN_FIELDS.join(", ")}`,
+    );
+  }
+
+  return fields;
+}
+
+function splitLine(line) {
+  let parts = line.split("\t").map((p) => p.trim());
+  if (parts.length === 1) {
+    parts = line.split(",").map((p) => p.trim());
+  }
+  return parts;
+}
+
+function compareByField(field) {
+  const normalizedField = normalizeField(field);
+  if (!SORT_FIELDS.includes(normalizedField)) {
+    throw new Error(
+      `Unknown sort field: ${field}. Known fields: ${KNOWN_FIELDS.join(", ")}`,
+    );
+  }
+
+  return (a, b) => {
+    const valueA = a[normalizedField] || "";
+    const valueB = b[normalizedField] || "";
+    return valueA.localeCompare(valueB, undefined, {
+      sensitivity: "base",
+      numeric: true,
+    });
+  };
+}
+
 /**
- * Parse CSV or tab-separated data into name tag entries
+ * Parse CSV or tab-separated data into name tag entries.
  * @param {string} content - The CSV/TSV content
- * @param {string} format - Format type: 'name-vorname-funktion-zusatz', 'vorname-name-funktion-zusatz', or 'name-funktion-zusatz'
- * @returns {Array} Array of {vorname, name, function, zusatz} objects, sorted alphabetically by name
+ * @param {string|string[]} format - Ordered fields, e.g. "firstname,lastname,addition,image"
+ * @param {Object} options - Parser options
+ * @param {string} [options.sort] - Optional field to sort by. If omitted, input order is kept.
+ * @returns {Array} Array of parsed name tag entry objects
  */
-export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
-  const lines = content.trim().split("\n");
+export function parseCSV(content, format = DEFAULT_FORMAT, options = {}) {
+  const fields = Array.isArray(format)
+    ? format.map(normalizeField).filter(Boolean)
+    : parseFormat(format);
+  const lines = content.trim().split(/\r?\n/);
   const data = [];
 
   for (const line of lines) {
     if (!line.trim()) continue; // Skip empty lines
 
-    // Try tab-separated first (TSV format)
-    let parts = line.split("\t").map((p) => p.trim());
+    const parts = splitLine(line);
+    const entry = createEntry();
 
-    // If no tabs, try comma-separated
-    if (parts.length === 1) {
-      parts = line.split(",").map((p) => p.trim());
-    }
+    fields.forEach((field, index) => {
+      entry[field] = parts[index] || "";
+    });
 
-    let entry = { vorname: "", name: "", function: "", zusatz: "", image: "" };
-
-    // Parse according to selected format
-    switch (format) {
-      case "name-addition-image":
-        // Name[TAB]Addition(optional)[TAB]Image (filename referenced in image folder)
-        if (parts.length >= 1 && parts[0]) {
-          entry.name = parts[0];
-          entry.addition = parts[1] || "";
-          entry.image = parts[2] || "";
-        }
-        break;
-
-      case "name-image":
-        // Name[TAB]Image (filename referenced in image folder)
-        if (parts.length >= 1 && parts[0]) {
-          entry.name = parts[0];
-          entry.image = parts[1] || "";
-        }
-        break;
-
-      case "name-vorname-funktion-zusatz":
-        // Name[TAB]Vorname[TAB]Funktion(optional)[TAB]Zusatz(optional)
-        if (parts.length >= 1 && parts[0]) {
-          entry.name = parts[0];
-          entry.vorname = parts[1] || "";
-          entry.function = parts[2] || "";
-          entry.addition = parts[3] || "";
-        }
-        break;
-
-      case "vorname-name-funktion-zusatz":
-        // Vorname[TAB]Name[TAB]Funktion(optional)[TAB]Zusatz(optional)
-        if (parts.length >= 1 && parts[0]) {
-          entry.vorname = parts[0];
-          entry.name = parts[1] || "";
-          entry.function = parts[2] || "";
-          entry.addition = parts[3] || "";
-        }
-        break;
-
-      case "name-funktion-zusatz":
-        // Name[TAB]Funktion(optional)[TAB]Zusatz(optional) (no Vorname in this format)
-        if (parts.length >= 1 && parts[0]) {
-          entry.name = parts[0];
-          entry.vorname = "";
-          entry.function = parts[1] || "";
-          entry.addition = parts[2] || "";
-        }
-        break;
-    }
-
-    // Only add if at least name or vorname exists
-    if (entry.name || entry.vorname) {
+    if (Object.values(entry).some((value) => value)) {
       data.push(entry);
     }
   }
 
-  // Sort alphabetically by name (case-insensitive)
-  data.sort((a, b) => {
-    const nameA = a.name.toLowerCase();
-    const nameB = b.name.toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
+  if (options.sort) {
+    data.sort(compareByField(options.sort));
+  }
 
   return data;
 }
@@ -95,9 +114,9 @@ export function parseCSV(content, format = "name-vorname-funktion-zusatz") {
 export function createBlankEntries(count) {
   const n = Math.max(0, parseInt(count, 10) || 0);
   return Array.from({ length: n }, () => ({
-    vorname: "",
-    name: "",
-    function: "",
+    firstname: "",
+    lastname: "",
+    role: "",
     addition: "",
     image: "",
   }));

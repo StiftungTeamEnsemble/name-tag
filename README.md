@@ -63,13 +63,13 @@ npm run dev
 ##### CSV Upload
 
 1. Click the upload area or drag and drop a CSV file
-2. Format: `Name[TAB]Function` (tab-separated) or `Name,Function` (comma-separated)
+2. Match the active field order shown in the data field list
 
 ##### Manual Input
 
 1. Switch to "Manual Input" tab
 2. Enter data in the text area, one entry per line
-3. Use TAB to separate name and function
+3. Use TAB to separate columns
 
 #### Generate PDF
 
@@ -86,19 +86,23 @@ For automated workflows, batch processing, or integration into build pipelines:
 
 ```bash
 # Basic usage
-node src/cli.js example-data.csv
+node src/cli.js test/example-badges.tsv --format firstname,lastname,addition,image
 
-# Specify format and output
-node src/cli.js data.csv --format vorname-name-funktion-zusatz --output tags.pdf
+# Specify column format and output
+node src/cli.js data.tsv --format firstname,lastname,role,addition --output tags.pdf
+
+# Sort explicitly when desired. Without --sort, input order is preserved.
+node src/cli.js data.tsv --format firstname,lastname,addition,image --sort lastname
 
 # Use different layout
 node src/cli.js data.csv --layout zweckform-L4785-20-no-logo
 
 # Generate 90×135mm photo badges (3-up on A4 landscape, with crop marks)
-node src/cli.js DATA/example-badges.csv \
-  --format name-addition-image \
+node src/cli.js test/example-badges.tsv \
+  --format firstname,lastname,addition,image \
+  --sort lastname \
   --layout team-ensemble-badge-90x135 \
-  --image-dir DATA \
+  --image-dir test \
   --output badges.pdf
 
 # Show help
@@ -107,7 +111,13 @@ node src/cli.js --help
 
 CLI options:
 
-- `--format <format>` — CSV column format (see formats below)
+- `--format <fields>` — comma-separated column order, for example
+  `firstname,lastname,addition,image`. Known fields are `firstname`,
+  `lastname`, `role`, `addition`, and `image`.
+- `--sort <field>` — optional sort field. If omitted, entries are processed in
+  the order of the TSV/CSV. Known sort fields are `firstname`, `lastname`,
+  `role`, `addition`, and `image`.
+- `--lines` — draw label/badge border lines for checking alignment
 - `--layout <layout>` — layout name
 - `--output <file>` — output PDF path
 - `--image-dir <dir>` — folder containing the photos referenced by filename in
@@ -135,16 +145,17 @@ CLI options:
 - Each badge contains:
   - a **circular masked photo** (75 × 75 mm), loaded by filename from the image
     folder (`--image-dir` / "Bildordner auswählen" in the web UI)
-  - the **name** (`{{displayName}}`), auto-sized and centered
+  - the **name** (`{{join "firstname" "lastname" separator=" "}}`), auto-sized
+    and centered
   - a "Bleib im Kontakt mit **Team Ensemble**" footer
   - a **QR code** (generated with the `qrcode` package)
 
-Use it with the `name-addition-image` CSV format. A debug variant
-`team-ensemble-badge-90x135-debug` draws the badge outlines.
+Use it with `--format firstname,lastname,addition,image`. Add `--lines` in the
+CLI or enable "Linien anzeigen" in the web UI to draw badge outlines.
 
 ##### Face detection
 
-The variant `team-ensemble-badge-90x135-face` runs face detection
+The `team-ensemble-badge-90x135` layout runs face detection
 ([@vladmandic/human](https://github.com/vladmandic/human)) on each photo and
 positions/scales it so every face ends up at the same size and position inside
 the circular mask. If a face-centered crop would leave the mask uncovered, the
@@ -164,10 +175,11 @@ Per-`imageData` tunables (with defaults): `faceHeightFraction` (0.6),
 `faceCenterX` (0.5), `faceCenterY` (0.55).
 
 ```bash
-node src/cli.js DATA/example-badges.csv \
-  --format name-addition-image \
-  --layout team-ensemble-badge-90x135-face \
-  --image-dir DATA \
+node src/cli.js test/example-badges.tsv \
+  --format firstname,lastname,addition,image \
+  --sort lastname \
+  --layout team-ensemble-badge-90x135 \
+  --image-dir test \
   --output badges.pdf
 ```
 
@@ -181,8 +193,8 @@ The badge layout references photos by filename. Provide the folder via:
   (`showDirectoryPicker`) with a `<input webkitdirectory>` fallback for browsers
   that don't support it.
 
-A ready-made test CSV referencing the photos in `DATA/` is at
-`DATA/example-badges.csv`.
+A ready-made test TSV referencing the photos in `test/` is at
+`test/example-badges.tsv`.
 
 ### Custom Layout Parameters
 

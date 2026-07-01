@@ -1,4 +1,8 @@
-import { parseCSV, createBlankEntries } from "./utils/csvParser.js";
+import {
+  KNOWN_FIELDS,
+  parseCSV,
+  createBlankEntries,
+} from "./utils/csvParser.js";
 import { PdfGenerator } from "./utils/pdfGenerator.js";
 import { PdfPreviewManager } from "./utils/pdfPreviewManager.js";
 import { getAvailableLayouts, getLayoutConfig, assetPaths } from "./config.js";
@@ -52,13 +56,17 @@ let imageFiles = null;
 const csvFile = document.getElementById("csvFile");
 const dropZone = document.getElementById("dropZone");
 const manualInput = document.getElementById("manualInput");
-const formatSelect = document.getElementById("formatSelect");
+const fieldOrderList = document.getElementById("fieldOrderList");
 const formatHint = document.getElementById("formatHint");
+const sortSelect = document.getElementById("sortSelect");
 const parseBtn = document.getElementById("parseBtn");
 const previewTable = document.getElementById("previewTable");
+const previewHead = previewTable.querySelector("thead tr");
 const previewBody = document.getElementById("previewBody");
 const noPreview = document.getElementById("noPreview");
 const layoutSelect = document.getElementById("layoutSelect");
+const showLines = document.getElementById("showLines");
+const folderSelector = document.querySelector(".folder-selector");
 const selectFolderBtn = document.getElementById("selectFolderBtn");
 const folderInput = document.getElementById("folderInput");
 const folderStatus = document.getElementById("folderStatus");
@@ -69,6 +77,19 @@ const previewModal = document.getElementById("previewModal");
 const closePreview = document.getElementById("closePreview");
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
+
+const fieldDefinitions = [
+  { value: "firstname", label: "Vorname" },
+  { value: "lastname", label: "Nachname" },
+  { value: "role", label: "Funktion" },
+  { value: "addition", label: "Zusatz" },
+  { value: "image", label: "Bilddatei" },
+];
+let fieldOrder = [];
+let activeFields = new Set();
+let draggedField = null;
+let dropIndicator = null;
+let currentInputContent = "";
 
 // Populate layout dropdown
 function populateLayoutDropdown() {
@@ -81,68 +102,186 @@ function populateLayoutDropdown() {
     option.textContent = layout.label;
     layoutSelect.appendChild(option);
   });
+
+  updateLayoutOptions();
 }
 
-// Format configurations
-const formatConfigurations = {
-  "vorname-name-funktion-zusatz": {
-    label: "Vorname[TAB]Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
-    manual:
-      "Namen und Funktionen eingeben\nFormat: Vorname[TAB]Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMax\tMustermann\tDirektor\tAbteilung A\nErika\tMusterfrau\tManagerin\t",
-    hint: "Format: Vorname[TAB]Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
-  },
-  "name-vorname-funktion-zusatz": {
-    label: "Name[TAB]Vorname[TAB]Funktion (optional)[TAB]Zusatz (optional)",
-    manual:
-      "Namen und Funktionen eingeben\nFormat: Name[TAB]Vorname[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tMax\tDirektor\tAbteilung A\nMusterfrau\tErika\tManagerin\t",
-    hint: "Format: Name[TAB]Vorname[TAB]Funktion (optional)[TAB]Zusatz (optional)",
-  },
-  "name-funktion-zusatz": {
-    label: "Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
-    manual:
-      "Namen und Funktionen eingeben\nFormat: Name[TAB]Funktion[TAB]Zusatz\n\nBeispiel:\nMustermann\tDirektor\tAbteilung A\nMusterfrau\tManagerin\t",
-    hint: "Format: Name[TAB]Funktion (optional)[TAB]Zusatz (optional)",
-  },
-  "name-addition-image": {
-    label: "Name[TAB]Zusatz (optional)[TAB]Bilddatei (für Badge-Layout)",
-    manual:
-      "Namen und Bilddateien eingeben\nFormat: Name[TAB]Zusatz[TAB]Bilddatei\n\nBeispiel:\nMax Mustermann\tMuster AG\tMax_Mustermann.jpg\nErika Musterfrau\tBeispiel GmbH\tErika_Musterfrau.jpg",
-    hint: "Format: Name[TAB]Zusatz (optional)[TAB]Bilddatei (Dateiname im gewählten Bildordner)",
-  },
-};
+function updateLayoutOptions() {
+  const layoutConfig = getSelectedLayoutConfig();
+  folderSelector.hidden = !layoutConfig.requiresImageFolder;
+  const layoutFields = getLayoutFields(layoutConfig);
+  fieldOrder = layoutFields;
+  activeFields = new Set(layoutFields);
+  renderFieldOrderList();
+  populateSortDropdown(layoutFields);
+  refreshPreviewFromCurrentInput();
+}
+
+function getSelectedLayoutConfig() {
+  const layoutConfig = getLayoutConfig(layoutSelect.value);
+  return {
+    ...layoutConfig,
+    showBorder: Boolean(layoutConfig.showBorder || showLines.checked),
+  };
+}
 
 // Initialize
-populateFormatDropdown();
 populateLayoutDropdown();
 
-// Populate format dropdown
-function populateFormatDropdown() {
-  formatSelect.innerHTML = "";
-
-  Object.keys(formatConfigurations).forEach((key) => {
-    const option = document.createElement("option");
-    option.value = key;
-    option.textContent = formatConfigurations[key].label;
-    formatSelect.appendChild(option);
-  });
+function getLayoutFields(layoutConfig) {
+  const fields = Array.isArray(layoutConfig.dataFields)
+    ? layoutConfig.dataFields
+    : KNOWN_FIELDS;
+  return fields.filter((field) => KNOWN_FIELDS.includes(field));
 }
 
-// Update placeholder text based on format selection
-function updatePlaceholders() {
-  const format = formatSelect.value;
-  const config = formatConfigurations[format];
+function populateSortDropdown(fields = fieldOrder) {
+  const previousValue = sortSelect.value;
+  sortSelect.innerHTML = "";
 
-  if (config) {
-    manualInput.placeholder = config.manual;
-    formatHint.textContent = config.hint;
+  const keepOrderOption = document.createElement("option");
+  keepOrderOption.value = "";
+  keepOrderOption.textContent = "Reihenfolge der TSV/CSV behalten";
+  sortSelect.appendChild(keepOrderOption);
+
+  fieldDefinitions
+    .filter((definition) => fields.includes(definition.value))
+    .forEach((field) => {
+      const option = document.createElement("option");
+      option.value = field.value;
+      option.textContent = field.label;
+      sortSelect.appendChild(option);
+    });
+
+  sortSelect.value = fields.includes(previousValue) ? previousValue : "";
+}
+
+function getActiveFormatFields() {
+  return fieldOrder.filter((field) => activeFields.has(field));
+}
+
+function getActiveFormat() {
+  return getActiveFormatFields().join(",");
+}
+
+function renderFieldOrderList() {
+  fieldOrderList.innerHTML = "";
+
+  fieldOrder.forEach((field) => {
+    const definition = fieldDefinitions.find((item) => item.value === field);
+    const item = document.createElement("li");
+    item.className = "field-order-item";
+    item.draggable = true;
+    item.dataset.field = field;
+    item.innerHTML = `
+      <span class="drag-handle" aria-hidden="true">⋮⋮</span>
+      <label>
+        <input type="checkbox" ${activeFields.has(field) ? "checked" : ""} />
+        <span>${definition.label}</span>
+      </label>
+    `;
+
+    item.addEventListener("dragstart", () => {
+      draggedField = field;
+      item.classList.add("dragging");
+    });
+    item.addEventListener("dragend", () => {
+      draggedField = null;
+      clearDropIndicator();
+      item.classList.remove("dragging");
+    });
+
+    const checkbox = item.querySelector("input");
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        activeFields.add(field);
+      } else {
+        activeFields.delete(field);
+      }
+      updateFormatPreview();
+      refreshPreviewFromCurrentInput();
+    });
+
+    fieldOrderList.appendChild(item);
+  });
+
+  updateFormatPreview();
+}
+
+function getDropIndex(clientY) {
+  const items = Array.from(fieldOrderList.querySelectorAll(".field-order-item"));
+  for (let index = 0; index < items.length; index++) {
+    const rect = items[index].getBoundingClientRect();
+    if (clientY < rect.top + rect.height / 2) {
+      return index;
+    }
+  }
+  return items.length;
+}
+
+function setDropIndicator(index) {
+  dropIndicator = { index };
+
+  const items = Array.from(fieldOrderList.querySelectorAll(".field-order-item"));
+  items.forEach((item) => item.classList.remove("drop-before", "drop-after"));
+
+  if (items.length === 0) return;
+  if (index >= items.length) {
+    items[items.length - 1].classList.add("drop-after");
+  } else {
+    items[index].classList.add("drop-before");
   }
 }
 
-// Initialize placeholders
-updatePlaceholders();
+function clearDropIndicator() {
+  dropIndicator = null;
+  fieldOrderList.querySelectorAll(".field-order-item").forEach((item) => {
+    item.classList.remove("drop-before", "drop-after");
+  });
+}
 
-// Listen for format changes
-formatSelect.addEventListener("change", updatePlaceholders);
+fieldOrderList.addEventListener("dragover", (event) => {
+  if (!draggedField) return;
+  event.preventDefault();
+  setDropIndicator(getDropIndex(event.clientY));
+});
+
+fieldOrderList.addEventListener("dragleave", (event) => {
+  if (!fieldOrderList.contains(event.relatedTarget)) {
+    clearDropIndicator();
+  }
+});
+
+fieldOrderList.addEventListener("drop", (event) => {
+  event.preventDefault();
+  if (!draggedField) return;
+
+  const nextOrder = fieldOrder.filter((value) => value !== draggedField);
+  const draggedIndex = fieldOrder.indexOf(draggedField);
+  let dropIndex = dropIndicator?.index ?? getDropIndex(event.clientY);
+  if (draggedIndex < dropIndex) {
+    dropIndex -= 1;
+  }
+  dropIndex = Math.max(0, Math.min(dropIndex, nextOrder.length));
+
+  nextOrder.splice(dropIndex, 0, draggedField);
+  fieldOrder = nextOrder;
+  clearDropIndicator();
+  renderFieldOrderList();
+  refreshPreviewFromCurrentInput();
+});
+
+function updateFormatPreview() {
+  formatHint.textContent = getActiveFormat()
+    ? "Aktive Felder entsprechen den Spalten von links nach rechts."
+    : "Bitte mindestens ein Feld aktivieren.";
+}
+
+manualInput.placeholder =
+  "Daten einfügen\nEine Zeile pro Schild, Spalten mit Tab getrennt\n\nBeispiel:\nMax\tMustermann\tDirektor\tAbteilung A\nErika\tMusterfrau\tManagerin\t";
+
+sortSelect.addEventListener("change", () => refreshPreviewFromCurrentInput());
+layoutSelect.addEventListener("change", updateLayoutOptions);
 
 // Image folder selection.
 // Prefer the File System Access API (showDirectoryPicker); fall back to a
@@ -209,6 +348,11 @@ tabButtons.forEach((btn) => {
     // Update active content
     tabContents.forEach((content) => content.classList.remove("active"));
     document.getElementById(`${tabName}-tab`).classList.add("active");
+
+    if (tabName === "manual") {
+      currentInputContent = manualInput.value;
+      refreshPreviewFromCurrentInput();
+    }
   });
 });
 
@@ -245,17 +389,20 @@ function loadCSVFile() {
 
   const reader = new FileReader();
   reader.onload = (e) => {
-    const content = e.target.result;
-    const format = formatSelect.value;
-    parseAndDisplayData(content, format);
+    currentInputContent = e.target.result;
+    parseAndDisplayData(currentInputContent);
   };
   reader.readAsText(file);
 }
 
+manualInput.addEventListener("input", () => {
+  currentInputContent = manualInput.value;
+  refreshPreviewFromCurrentInput();
+});
+
 // Parse Button
 parseBtn.addEventListener("click", () => {
   const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
-  const format = formatSelect.value;
 
   let content = "";
   if (activeTab === "csv") {
@@ -267,7 +414,8 @@ parseBtn.addEventListener("click", () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       content = e.target.result;
-      parseAndDisplayData(content, format);
+      currentInputContent = content;
+      parseAndDisplayData(content);
     };
     reader.readAsText(file);
   } else {
@@ -276,42 +424,86 @@ parseBtn.addEventListener("click", () => {
       showError("Bitte geben Sie Daten in das Textfeld ein");
       return;
     }
-    parseAndDisplayData(content, format);
+    currentInputContent = content;
+    parseAndDisplayData(content);
   }
 });
 
-function parseAndDisplayData(content, format) {
+function refreshPreviewFromCurrentInput() {
+  if (!currentInputContent.trim()) {
+    clearPreview();
+    return;
+  }
+  parseAndDisplayData(currentInputContent, { silent: true });
+}
+
+function clearPreview() {
+  nameTagData = [];
+  previewBody.innerHTML = "";
+  previewTable.style.display = "none";
+  noPreview.style.display = "block";
+  generateBtn.disabled = true;
+  previewPdfBtn.disabled = true;
+}
+
+function parseAndDisplayData(content, { silent = false } = {}) {
   try {
-    nameTagData = parseCSV(content, format);
+    nameTagData = parseCSV(content, getActiveFormat(), {
+      sort: sortSelect.value || null,
+    });
 
     if (nameTagData.length === 0) {
-      showError(
-        "Keine gültigen Daten gefunden. Bitte überprüfen Sie das Format.",
-      );
+      clearPreview();
+      if (!silent) {
+        showError(
+          "Keine gültigen Daten gefunden. Bitte überprüfen Sie das Format.",
+        );
+      }
       return;
     }
 
     displayPreview();
     generateBtn.disabled = false;
     previewPdfBtn.disabled = false;
-    showSuccess(`${nameTagData.length} Namensschilder geladen`);
+    if (!silent) {
+      showSuccess(`${nameTagData.length} Namensschilder geladen`);
+    }
   } catch (error) {
-    showError(`Fehler beim Verarbeiten der Daten: ${error.message}`);
+    clearPreview();
+    if (!silent) {
+      showError(`Fehler beim Verarbeiten der Daten: ${error.message}`);
+    }
   }
 }
 
 function displayPreview() {
+  const previewFields = getActiveFormatFields();
   previewBody.innerHTML = "";
+  previewHead.innerHTML = "";
+
+  previewFields.forEach((field) => {
+    const definition = fieldDefinitions.find((item) => item.value === field);
+    const header = document.createElement("th");
+    header.textContent = definition?.label || field;
+    previewHead.appendChild(header);
+  });
+
+  const actionHeader = document.createElement("th");
+  actionHeader.textContent = "Aktion";
+  previewHead.appendChild(actionHeader);
 
   nameTagData.forEach((item, index) => {
     const row = document.createElement("tr");
-    const displayName = `${item.vorname} ${item.name}`.trim();
-    row.innerHTML = `
-            <td>${escapeHtml(displayName)}</td>
-            <td>${escapeHtml(item.function)}</td>
-            <td>${escapeHtml(item.addition)}</td>
-            <td><button class="delete-btn" onclick="deleteRow(${index})">Löschen</button></td>
-        `;
+
+    previewFields.forEach((field) => {
+      const cell = document.createElement("td");
+      cell.textContent = item[field] || "";
+      row.appendChild(cell);
+    });
+
+    const actionCell = document.createElement("td");
+    actionCell.innerHTML = `<button class="delete-btn" onclick="deleteRow(${index})">Löschen</button>`;
+    row.appendChild(actionCell);
     previewBody.appendChild(row);
   });
 
@@ -338,8 +530,7 @@ generateBtn.addEventListener("click", async () => {
     return;
   }
 
-  const layoutName = layoutSelect.value;
-  const layoutConfig = getLayoutConfig(layoutName);
+  const layoutConfig = getSelectedLayoutConfig();
 
   try {
     pdfGenerator = await buildGenerator(layoutConfig);
@@ -357,8 +548,7 @@ previewPdfBtn.addEventListener("click", async () => {
     return;
   }
 
-  const layoutName = layoutSelect.value;
-  const layoutConfig = getLayoutConfig(layoutName);
+  const layoutConfig = getSelectedLayoutConfig();
 
   try {
     pdfGenerator = await buildGenerator(layoutConfig);

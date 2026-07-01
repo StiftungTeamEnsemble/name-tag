@@ -47,8 +47,9 @@ const nodeAssetPaths = {
  *   node src/cli.js <csv-file> [options]
  *
  * Options:
- *   --format <format>          Format type: 'name-vorname-funktion-zusatz' (default),
- *                              'vorname-name-funktion-zusatz', or 'name-funktion-zusatz'
+ *   --format <fields>          Comma-separated column fields (default: 'firstname,lastname,role,addition')
+ *   --sort <field>             Optional field to sort by. If omitted, input order is kept.
+ *   --lines                    Draw label/badge border lines for checking alignment.
  *   --layout <layout>          Layout name (default: 'zweckform-L4785-20')
  *   --output <file>            Output PDF file path (default: name-tags-YYYY-MM-DD.pdf)
  */
@@ -58,22 +59,20 @@ function printUsage() {
 Usage: name-tag-cli <csv-file> [options]
 
 Options:
-  --format <format>    CSV format type (default: name-vorname-funktion-zusatz)
-                       Options:
-                         - name-vorname-funktion-zusatz
-                         - vorname-name-funktion-zusatz
-                         - name-funktion-zusatz
-                         - name-addition-image  (for badge layout)
-                         - name-image           (for badge layout)
+  --format <fields>    Comma-separated column fields (default: firstname,lastname,role,addition)
+                       Known fields: firstname, lastname, role, addition, image
+                       Example: --format firstname,lastname,addition,image
+
+  --sort <field>       Sort by a field after parsing. If omitted, the TSV/CSV order is kept.
+                       Known fields: firstname, lastname, role, addition, image
+
+  --lines              Draw label/badge border lines for checking alignment
 
   --layout <layout>    Label layout name (default: zweckform-L4785-20)
                        Options:
                          - zweckform-L4785-20
-                         - zweckform-L4785-20-debug
                          - zweckform-L4785-20-no-logo
-                         - team-ensemble-badge-90x135
-                         - team-ensemble-badge-90x135-debug
-                         - team-ensemble-badge-90x135-face  (face detection)
+                         - team-ensemble-badge-90x135  (uses face detection)
   
   --output <file>      Output PDF file path (default: name-tags-YYYY-MM-DD.pdf)
 
@@ -85,20 +84,27 @@ Options:
   --help              Show this help message
 
 Examples:
-  # Generate PDF with default settings
-  name-tag-cli example-data.csv
+  # Generate labels from the bundled example data
+  name-tag-cli test/example-badges.tsv --format firstname,lastname,addition,image
 
   # Specify format and output file
-  name-tag-cli data.csv --format vorname-name-funktion-zusatz --output tags.pdf
+  name-tag-cli data.tsv --format firstname,lastname,role,addition --output tags.pdf
+
+  # Sort by last name
+  name-tag-cli data.tsv --format firstname,lastname,addition,image --sort lastname
 
   # Use a different layout
   name-tag-cli data.csv --layout zweckform-L4785-20-no-logo
 
+  # Draw layout lines for checking alignment
+  name-tag-cli data.csv --lines
+
   # Generate 90x135mm badges (3-up on A4 landscape) with photos from a folder
-  name-tag-cli DATA/example-badges.csv \\
-    --format name-addition-image \\
+  name-tag-cli test/example-badges.tsv \\
+    --format firstname,lastname,addition,image \\
+    --sort lastname \\
     --layout team-ensemble-badge-90x135 \\
-    --image-dir DATA \\
+    --image-dir test \\
     --output badges.pdf
 `);
 }
@@ -106,8 +112,10 @@ Examples:
 function parseArguments(args) {
   const options = {
     csvFile: null,
-    format: "name-vorname-funktion-zusatz",
+    format: "firstname,lastname,role,addition",
+    sort: null,
     layout: "zweckform-L4785-20",
+    lines: false,
     output: null,
     imageDir: null,
     empty: 0,
@@ -121,8 +129,12 @@ function parseArguments(args) {
       process.exit(0);
     } else if (arg === "--format") {
       options.format = args[++i];
+    } else if (arg === "--sort") {
+      options.sort = args[++i];
     } else if (arg === "--layout") {
       options.layout = args[++i];
+    } else if (arg === "--lines") {
+      options.lines = true;
     } else if (arg === "--output" || arg === "-o") {
       options.output = args[++i];
     } else if (arg === "--image-dir") {
@@ -160,7 +172,9 @@ async function main() {
   // Parse CSV data
   let nameTagData;
   try {
-    nameTagData = parseCSV(csvContent, options.format);
+    nameTagData = parseCSV(csvContent, options.format, {
+      sort: options.sort,
+    });
     if (nameTagData.length === 0) {
       console.error("Error: No valid data found in CSV file");
       process.exit(1);
@@ -188,7 +202,11 @@ async function main() {
     console.log(`Generating PDF with layout: ${options.layout}`);
 
     // Get layout configuration with Node.js paths
-    const layoutConfig = getLayoutConfig(options.layout, nodeAssetPaths);
+    const baseLayoutConfig = getLayoutConfig(options.layout, nodeAssetPaths);
+    const layoutConfig = {
+      ...baseLayoutConfig,
+      showBorder: baseLayoutConfig.showBorder || options.lines,
+    };
 
     // Create Node.js resource loader
     const resourceLoader = new NodeResourceLoader();

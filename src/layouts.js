@@ -6,7 +6,8 @@
 export function createLabelLayouts(assetPaths) {
   const layouts = {
     "zweckform-L4785-20": {
-      name: "Zweckform L4785-20",
+      name: "Team Ensemble Etiketten (Zweckform L4785-20)",
+      dataFields: ["firstname", "lastname", "role", "addition"],
       paperFormat: "A4",
       columns: 2,
       rows: 5,
@@ -37,7 +38,7 @@ export function createLabelLayouts(assetPaths) {
           children: [
             {
               type: "text",
-              content: "{{displayName}}",
+              content: '{{join "firstname" "lastname" separator=" "}}',
               topPadding: 0,
               bottomPadding: 0,
               font: {
@@ -56,7 +57,7 @@ export function createLabelLayouts(assetPaths) {
             },
             {
               type: "text",
-              content: "{{function}}",
+              content: "{{role}}",
               topPadding: 4,
               bottomPadding: 0,
               font: {
@@ -96,6 +97,8 @@ export function createLabelLayouts(assetPaths) {
   // centered on an A4 landscape sheet, with printer crop marks.
   layouts["team-ensemble-badge-90x135"] = {
     name: "Team Ensemble Badge 90×135mm (3 auf A4 quer)",
+    requiresImageFolder: true,
+    dataFields: ["firstname", "lastname", "addition", "image"],
     paperFormat: "A4",
     landscape: true,
     columns: 3,
@@ -134,10 +137,15 @@ export function createLabelLayouts(assetPaths) {
             width: "75.00mm",
             height: "75.00mm",
             src: "{{image}}",
-            // How the photo is fitted/aligned within the mask:
-            //   objectFit: "cover" | "contain" | "fill"
-            //   align: "left" | "center" | "right" (or 0..1 / "%")
-            //   verticalAlign: "top" | "center" | "bottom" (or 0..1 / "%")
+            // Photo is placed via face detection so every face ends up at the
+            // same size and position inside the circular mask. Tunables:
+            //   faceHeightFraction — face box height vs. mask
+            //   faceCenterX / faceCenterY — where the face is anchored in the mask
+            faceDetect: true,
+            faceHeightFraction: 0.6,
+            faceCenterX: 0.5,
+            faceCenterY: 0.55,
+            // Fallback when no face is detected: cover + center.
             objectFit: "cover",
             align: "center",
             verticalAlign: "center",
@@ -156,7 +164,7 @@ export function createLabelLayouts(assetPaths) {
           {
             type: "text",
             bottomPadding: "2mm",
-            content: "{{displayName}}",
+            content: '{{join "firstname" "lastname" separator=" "}}',
             autoSize: true,
             font: {
               size: 24,
@@ -234,52 +242,13 @@ export function createLabelLayouts(assetPaths) {
     ],
   };
 
-  layouts["team-ensemble-badge-90x135-debug"] = {
-    ...layouts["team-ensemble-badge-90x135"],
-    name: "Team Ensemble Badge 90×135mm (liniert)",
-    showBorder: true,
-  };
-
-  // Same badge, but the photo is placed via face detection so every face ends
-  // up at the same position and size inside the circular mask.
-  {
-    const faceElements = JSON.parse(
-      JSON.stringify(layouts["team-ensemble-badge-90x135"].elements),
-    );
-    for (const el of faceElements) {
-      if (el.type === "mask" && Array.isArray(el.children)) {
-        for (const child of el.children) {
-          if (child.type === "imageData") {
-            child.faceDetect = true;
-            // Tunables (defaults shown): face box height vs. mask, and where the
-            // face center is anchored within the mask.
-            child.faceHeightFraction = 0.6;
-            child.faceCenterX = 0.5;
-            child.faceCenterY = 0.55;
-          }
-        }
-      }
-    }
-    layouts["team-ensemble-badge-90x135-face"] = {
-      ...layouts["team-ensemble-badge-90x135"],
-      name: "Team Ensemble Badge 90×135mm (Gesichtserkennung)",
-      elements: faceElements,
-    };
-  }
-
-  layouts["zweckform-L4785-20-debug"] = {
-    ...layouts["zweckform-L4785-20"],
-    name: "Zweckform L4785-20 (liniert)",
-    showBorder: true,
-  };
-
   layouts["zweckform-L4785-20-no-logo"] = {
     ...layouts["zweckform-L4785-20"],
-    name: "Zweckform L4785-20 (ohne Logo)",
+    name: "Neutral Etiketten (Zweckform L4785-20)",
     elements: layouts["zweckform-L4785-20"].elements.filter(
       (el) => el.type !== "image",
     ),
-    showBorder: true,
+    showBorder: false,
   };
 
   return layouts;
