@@ -125,86 +125,44 @@ CLI options:
   case-insensitively and Unicode-normalization-insensitively (handy on macOS,
   whose filenames are NFD).
 
-**See [QUICKSTART.md](QUICKSTART.md) and [CLI-README.md](CLI-README.md) for detailed CLI documentation.**
+Run `node src/cli.js --help` for the full option list, and see
+**[LAYOUTS.md](LAYOUTS.md)** for the layout definition reference.
 
-### Predefined Layouts
+### Layouts
 
-#### Zweckform L4785-20
+Select a layout with `--layout` (CLI) or the dropdown (web). Three ship by
+default:
 
-- Labels per page: 80 (4 columns × 20 rows)
-- Label size: 52.5 × 21.2 mm
-- Paper format: A4
+| Key | Name |
+| --- | --- |
+| `zweckform-L4785-20` | Team Ensemble Etiketten (Zweckform L4785-20) |
+| `zweckform-L4785-20-no-logo` | Neutral Etiketten (Zweckform L4785-20) |
+| `team-ensemble-badge-90x135` | Team Ensemble Badge 90×135mm (3 auf A4 quer) |
 
-#### Team Ensemble Badge 90×135mm (`team-ensemble-badge-90x135`)
+The **badge** layout places a face-detected circular photo, the name + company,
+a "Bleib im Kontakt mit **Team Ensemble**" footer and a QR code three-up on an A4
+landscape sheet with crop marks. Use it with
+`--format firstname,lastname,addition,image` and point `--image-dir` at the photo
+folder.
 
-- Badge size: 90 × 135 mm
-- 3 badges per A4 **landscape** sheet, side by side with **0 mm gap**, centered
-- **Crop marks**: computed once for the whole imposition; a mark is drawn only
-  if it doesn't intrude into a neighbouring badge, so shared cut lines get a
-  single mark and the outer edges keep their marks
-- Each badge contains:
-  - a **circular masked photo** (75 × 75 mm), loaded by filename from the image
-    folder (`--image-dir` / "Bildordner auswählen" in the web UI)
-  - the **name** (`{{join "firstname" "lastname" separator=" "}}`), auto-sized
-    and centered
-  - a "Bleib im Kontakt mit **Team Ensemble**" footer
-  - a **QR code** (generated with the `qrcode` package)
+> **Defining or customizing layouts:** see **[LAYOUTS.md](LAYOUTS.md)** — the
+> full layout definition reference (the element AST). It covers the layout
+> properties, grid/imposition math, crop marks, template helpers, every element
+> type (`image`, `text`, `story`, `textbox`, `mask`, `imageData`, `qrcode`,
+> `circle`), and face detection.
 
-Use it with `--format firstname,lastname,addition,image`. Add `--lines` in the
-CLI or enable "Linien anzeigen" in the web UI to draw badge outlines.
+#### Image folder (badge photos)
 
-##### Face detection
-
-The `team-ensemble-badge-90x135` layout runs face detection
-([@vladmandic/human](https://github.com/vladmandic/human)) on each photo and
-positions/scales it so every face ends up at the same size and position inside
-the circular mask. If a face-centered crop would leave the mask uncovered, the
-image is scaled up to the closest fit that still fills the whole mask; if no
-face is found it falls back to plain cover/center.
-
-It works in both environments:
-
-- **CLI**: face detection is enabled automatically when the layout needs it
-  (uses Human's WASM TensorFlow backend with models bundled locally — no native
-  build and no network required).
-- **Web**: enabled automatically for face layouts (uses the WebGL backend; the
-  detection library is lazy-loaded and models are fetched from a CDN, so the
-  first run needs network access). Select the image folder first.
-
-Per-`imageData` tunables (with defaults): `faceHeightFraction` (0.6),
-`faceCenterX` (0.5), `faceCenterY` (0.55).
-
-```bash
-node src/cli.js test/example-badges.tsv \
-  --format firstname,lastname,addition,image \
-  --sort lastname \
-  --layout team-ensemble-badge-90x135 \
-  --image-dir test \
-  --output badges.pdf
-```
-
-##### Image folder
-
-The badge layout references photos by filename. Provide the folder via:
+The badge layout references photos by filename (the `image` field). Provide the
+folder via:
 
 - **CLI**: `--image-dir <dir>`
 - **Web**: the "Bildordner auswählen" button, which uses the
   [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API)
-  (`showDirectoryPicker`) with a `<input webkitdirectory>` fallback for browsers
-  that don't support it.
+  (`showDirectoryPicker`) with a `<input webkitdirectory>` fallback.
 
-A ready-made test TSV referencing the photos in `test/` is at
+A ready-made example TSV referencing the photos in `test/` is at
 `test/example-badges.tsv`.
-
-### Custom Layout Parameters
-
-- **Paper Format**: A4, Letter, or A3
-- **Labels per Row (X)**: Number of columns
-- **Labels per Column (Y)**: Number of rows
-- **Gap X**: Horizontal spacing between labels (mm)
-- **Gap Y**: Vertical spacing between labels (mm)
-- **Start Left**: Left margin (mm)
-- **Start Top**: Top margin (mm)
 
 ## Development
 
@@ -232,23 +190,21 @@ name-tag/
 │   ├── main.js                    # Main web application logic
 │   ├── cli.js                     # CLI entry point
 │   ├── config.js                  # Web configuration (Vite URLs)
-│   ├── configNode.js              # Node.js configuration (file paths)
+│   ├── layouts.js                 # Layout definitions (shared) — see LAYOUTS.md
 │   ├── styles.css                 # Global styles
 │   └── utils/
 │       ├── csvParser.js           # CSV/TSV parsing (shared)
-│       ├── pdfGenerator.js        # PDF generation for web
-│       ├── pdfGeneratorNode.js    # PDF generation for CLI
+│       ├── pdfGenerator.js        # PDF generation (renders the layout AST)
+│       ├── resourceLoader.js      # Font/PDF/image loading (browser + Node)
+│       ├── faceDetectorNode.js    # Face detection (Node, WASM backend)
+│       ├── faceDetectorBrowser.js # Face detection (browser, WebGL backend)
 │       └── pdfPreviewManager.js   # PDF preview with PDF.js (web only)
-├── .github/
-│   └── workflows/
-│       └── deploy.yml             # GitHub Actions deployment
+├── test/                          # Example data (TSV + sample portraits)
 ├── index.html                     # Main HTML file
 ├── vite.config.js                # Vite configuration
 ├── package.json                   # Dependencies and scripts
 ├── README.md                      # This file
-├── CLI-README.md                  # Detailed CLI documentation
-├── QUICKSTART.md                  # Quick CLI reference
-└── REFACTORING-SUMMARY.md         # Architecture documentation
+└── LAYOUTS.md                     # Layout definition reference (element AST)
 ```
 
 ## GitHub Pages Deployment
@@ -302,26 +258,12 @@ Bob Johnson,Developer
 
 ## Customization
 
-### Adding New Label Presets
+### Adding New Layouts
 
-Edit `src/main.js` in the `getSelectedLayout()` function:
-
-```javascript
-} else if (layoutType === 'your-label-name') {
-    return {
-        name: 'Your Label Name',
-        paperFormat: 'A4',
-        columns: 4,
-        rows: 10,
-        labelWidth: 50,
-        labelHeight: 25,
-        rowGap: 1,
-        columnGap: 1,
-        marginLeft: 5,
-        marginTop: 5
-    };
-}
-```
+Add an entry to `createLabelLayouts()` in [`src/layouts.js`](src/layouts.js). It
+becomes available in both the CLI (`--layout <key>`) and the web dropdown
+automatically. See **[LAYOUTS.md](LAYOUTS.md)** for the full layout definition
+reference (properties and element types).
 
 ### Styling
 
