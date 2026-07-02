@@ -31,9 +31,8 @@ async function buildGenerator(layoutConfig) {
     }
     showSuccess("Gesichtserkennung wird geladen…");
     // Lazy-loaded so the large face-detection library is only fetched on demand.
-    const { createBrowserFaceDetector } = await import(
-      "./utils/faceDetectorBrowser.js"
-    );
+    const { createBrowserFaceDetector } =
+      await import("./utils/faceDetectorBrowser.js");
     faceDetector = await createBrowserFaceDetector();
   }
   // Append blank tags (to fill in by hand) requested in the UI.
@@ -209,7 +208,9 @@ function renderFieldOrderList() {
 }
 
 function getDropIndex(clientY) {
-  const items = Array.from(fieldOrderList.querySelectorAll(".field-order-item"));
+  const items = Array.from(
+    fieldOrderList.querySelectorAll(".field-order-item"),
+  );
   for (let index = 0; index < items.length; index++) {
     const rect = items[index].getBoundingClientRect();
     if (clientY < rect.top + rect.height / 2) {
@@ -222,7 +223,9 @@ function getDropIndex(clientY) {
 function setDropIndicator(index) {
   dropIndicator = { index };
 
-  const items = Array.from(fieldOrderList.querySelectorAll(".field-order-item"));
+  const items = Array.from(
+    fieldOrderList.querySelectorAll(".field-order-item"),
+  );
   items.forEach((item) => item.classList.remove("drop-before", "drop-after"));
 
   if (items.length === 0) return;

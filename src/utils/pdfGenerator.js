@@ -704,7 +704,8 @@ export class PdfGenerator {
       const boxX = labelX + this.mmToPoints(parseMm(element.left));
       const boxW = this.mmToPoints(parseMm(element.width));
       const boxH = this.mmToPoints(parseMm(element.height));
-      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const boxTopY =
+        labelY + labelHeight - this.mmToPoints(parseMm(element.top));
       const boxBottomY = boxTopY - boxH;
 
       this.page.pushOperators(pushGraphicsState());
@@ -725,13 +726,7 @@ export class PdfGenerator {
       if (Array.isArray(element.children)) {
         for (const child of element.children) {
           if (child.type === "imageData") {
-            await this.drawImageData(
-              child,
-              item,
-              boxX,
-              boxBottomY,
-              boxH,
-            );
+            await this.drawImageData(child, item, boxX, boxBottomY, boxH);
           }
         }
       }
@@ -908,7 +903,8 @@ export class PdfGenerator {
       const boxX = labelX + this.mmToPoints(parseMm(element.left));
       const boxW = this.mmToPoints(parseMm(element.width));
       const boxH = this.mmToPoints(parseMm(element.height));
-      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const boxTopY =
+        labelY + labelHeight - this.mmToPoints(parseMm(element.top));
       const boxBottomY = boxTopY - boxH;
 
       const img = await this.getEmbeddedImage(element.src, item);
@@ -996,7 +992,10 @@ export class PdfGenerator {
     if (autoSize) {
       let maxWordWidth = 0;
       for (const word of text.split(" ")) {
-        maxWordWidth = Math.max(maxWordWidth, font.widthOfTextAtSize(word, size));
+        maxWordWidth = Math.max(
+          maxWordWidth,
+          font.widthOfTextAtSize(word, size),
+        );
       }
       if (maxWordWidth > maxWidth) {
         size = size * (maxWidth / maxWordWidth);
@@ -1133,7 +1132,8 @@ export class PdfGenerator {
       const boxLeft = labelX + this.mmToPoints(parseMm(element.left));
       const boxW = this.mmToPoints(parseMm(element.width));
       const boxH = this.mmToPoints(parseMm(element.height));
-      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const boxTopY =
+        labelY + labelHeight - this.mmToPoints(parseMm(element.top));
       const defaultAlign = element.textAlign || "left";
       const valign = element.verticalAlign || "top";
       const children = element.children || [];
@@ -1181,7 +1181,8 @@ export class PdfGenerator {
       const boxX = labelX + this.mmToPoints(parseMm(element.left));
       const w = this.mmToPoints(parseMm(element.width));
       const h = this.mmToPoints(parseMm(element.height));
-      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const boxTopY =
+        labelY + labelHeight - this.mmToPoints(parseMm(element.top));
 
       const pixelSize = Math.max(64, Math.round(Math.max(w, h) * 4));
       const dataUrl = await QRCode.toDataURL(text, {
@@ -1213,7 +1214,8 @@ export class PdfGenerator {
       const w = this.mmToPoints(parseMm(element.width));
       const h = this.mmToPoints(parseMm(element.height));
       const boxX = labelX + this.mmToPoints(parseMm(element.left));
-      const boxTopY = labelY + labelHeight - this.mmToPoints(parseMm(element.top));
+      const boxTopY =
+        labelY + labelHeight - this.mmToPoints(parseMm(element.top));
       const color = this.hexToRgb(element.color || "#808080");
 
       this.page.drawEllipse({

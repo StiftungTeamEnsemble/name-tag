@@ -20,7 +20,9 @@ function createEntry() {
 }
 
 export function normalizeField(field) {
-  return String(field || "").trim().toLowerCase();
+  return String(field || "")
+    .trim()
+    .toLowerCase();
 }
 
 export function parseFormat(format = DEFAULT_FORMAT) {

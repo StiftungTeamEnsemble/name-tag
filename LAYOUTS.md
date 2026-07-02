@@ -46,25 +46,25 @@ element nodes, not code.
 
 ## Layout object
 
-| Property      | Type    | Description |
-| ------------- | ------- | ----------- |
-| `name`        | string  | Human-readable label shown in the UI dropdown. |
-| `paperFormat` | string  | `"A4"`, `"Letter"`, or `"A3"`. |
-| `landscape`   | boolean | Swap page width/height (default `false`). |
-| `columns`     | number  | Labels per row. |
-| `rows`        | number  | Rows per page. |
-| `labelWidth`  | number  | Label width in mm. If omitted, computed from the page/margins/gaps. |
-| `labelHeight` | number  | Label height in mm. If omitted, computed. |
-| `rowGap`      | number  | **Horizontal** gap between columns, in mm (see note). |
-| `columnGap`   | number  | **Vertical** gap between rows, in mm (see note). |
-| `marginLeft`  | number  | Left page margin in mm. |
-| `marginTop`   | number  | Top page margin in mm. |
+| Property      | Type    | Description                                                                                                                     |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | string  | Human-readable label shown in the UI dropdown.                                                                                  |
+| `paperFormat` | string  | `"A4"`, `"Letter"`, or `"A3"`.                                                                                                  |
+| `landscape`   | boolean | Swap page width/height (default `false`).                                                                                       |
+| `columns`     | number  | Labels per row.                                                                                                                 |
+| `rows`        | number  | Rows per page.                                                                                                                  |
+| `labelWidth`  | number  | Label width in mm. If omitted, computed from the page/margins/gaps.                                                             |
+| `labelHeight` | number  | Label height in mm. If omitted, computed.                                                                                       |
+| `rowGap`      | number  | **Horizontal** gap between columns, in mm (see note).                                                                           |
+| `columnGap`   | number  | **Vertical** gap between rows, in mm (see note).                                                                                |
+| `marginLeft`  | number  | Left page margin in mm.                                                                                                         |
+| `marginTop`   | number  | Top page margin in mm.                                                                                                          |
 | `showBorder`  | boolean | Draw a light rectangle around each label (alignment aid). Toggled by the CLI `--lines` flag / the web "Linien anzeigen" option. |
-| `cropMarks`   | boolean | Draw printer crop marks (see [Crop marks](#crop-marks)). |
-| `elements`    | array   | The element nodes to render inside every label. |
+| `cropMarks`   | boolean | Draw printer crop marks (see [Crop marks](#crop-marks)).                                                                        |
+| `elements`    | array   | The element nodes to render inside every label.                                                                                 |
 
-> **Naming quirk:** `rowGap` is the gap *between columns* (horizontal) and
-> `columnGap` is the gap *between rows* (vertical). This is historical; keep it
+> **Naming quirk:** `rowGap` is the gap _between columns_ (horizontal) and
+> `columnGap` is the gap _between rows_ (vertical). This is historical; keep it
 > in mind when authoring layouts.
 
 ## Grid & imposition
@@ -132,53 +132,53 @@ Every element has a `type`. Unknown types are ignored.
 
 Embeds a vector PDF asset (e.g. the logo). Uses `position` + `width`.
 
-| Property   | Type            | Notes |
-| ---------- | --------------- | ----- |
-| `type`     | `"image"`       | |
-| `src`      | string          | Asset key (e.g. `"logo"`) or path to a PDF. |
-| `width`    | number (mm)     | |
-| `height`   | number \| `"auto"` | `"auto"` keeps aspect ratio. |
-| `position` | `{ x, y }` (mm) | Top-left. |
+| Property   | Type               | Notes                                       |
+| ---------- | ------------------ | ------------------------------------------- |
+| `type`     | `"image"`          |                                             |
+| `src`      | string             | Asset key (e.g. `"logo"`) or path to a PDF. |
+| `width`    | number (mm)        |                                             |
+| `height`   | number \| `"auto"` | `"auto"` keeps aspect ratio.                |
+| `position` | `{ x, y }` (mm)    | Top-left.                                   |
 
 ### text
 
 A single (optionally wrapping) text block. Used standalone or inside `story`.
 
-| Property        | Type            | Notes |
-| --------------- | --------------- | ----- |
-| `type`          | `"text"`        | |
-| `content`       | string          | May contain templates. |
-| `font`          | font object     | See [Fonts](#fonts-assets--colors). |
-| `color`         | hex string      | |
-| `width`         | number (mm)     | Enables wrapping to this width. |
+| Property        | Type            | Notes                                         |
+| --------------- | --------------- | --------------------------------------------- |
+| `type`          | `"text"`        |                                               |
+| `content`       | string          | May contain templates.                        |
+| `font`          | font object     | See [Fonts](#fonts-assets--colors).           |
+| `color`         | hex string      |                                               |
+| `width`         | number (mm)     | Enables wrapping to this width.               |
 | `autoSize`      | boolean         | Shrink font so the longest word fits `width`. |
-| `position`      | `{ x, y }` (mm) | Top-left (when standalone). |
-| `topPadding`    | number (mm)     | Space before (in `story`/`textbox`). |
-| `bottomPadding` | number (mm)     | Space after. |
+| `position`      | `{ x, y }` (mm) | Top-left (when standalone).                   |
+| `topPadding`    | number (mm)     | Space before (in `story`/`textbox`).          |
+| `bottomPadding` | number (mm)     | Space after.                                  |
 
 ### story
 
 Stacks `text` children vertically like HTML blocks, honoring each child's
 `topPadding`/`bottomPadding`. Only `text` children are allowed.
 
-| Property   | Type            | Notes |
-| ---------- | --------------- | ----- |
-| `type`     | `"story"`       | |
+| Property   | Type            | Notes                  |
+| ---------- | --------------- | ---------------------- |
+| `type`     | `"story"`       |                        |
 | `position` | `{ x, y }` (mm) | Top-left of the stack. |
-| `children` | array of `text` | |
+| `children` | array of `text` |                        |
 
 ### textbox
 
 A positioned box containing stacked paragraphs, with horizontal and vertical
 alignment. This is the richer successor to `story`.
 
-| Property        | Type          | Notes |
-| --------------- | ------------- | ----- |
-| `type`          | `"textbox"`   | |
-| `left/top/width/height` | mm    | The box. |
-| `textAlign`     | `"left"` \| `"center"` \| `"right"` | Default `"left"`. |
-| `verticalAlign` | `"top"` \| `"center"` \| `"bottom"` | Default `"top"`. |
-| `children`      | array         | Paragraphs (see below). |
+| Property                | Type                                | Notes                   |
+| ----------------------- | ----------------------------------- | ----------------------- |
+| `type`                  | `"textbox"`                         |                         |
+| `left/top/width/height` | mm                                  | The box.                |
+| `textAlign`             | `"left"` \| `"center"` \| `"right"` | Default `"left"`.       |
+| `verticalAlign`         | `"top"` \| `"center"` \| `"bottom"` | Default `"top"`.        |
+| `children`              | array                               | Paragraphs (see below). |
 
 Each **paragraph** child is one of:
 
@@ -192,12 +192,12 @@ Each **paragraph** child is one of:
 
 Clips its children to a shape. Currently supports circles.
 
-| Property   | Type              | Notes |
-| ---------- | ----------------- | ----- |
-| `type`     | `"mask"`          | |
-| `left/top/width/height` | mm   | The clip box. |
-| `typeMask` | `"circle"`        | Circle uses `min(width, height)` as diameter. |
-| `children` | array             | Drawn inside the clip (typically one `imageData`). |
+| Property                | Type       | Notes                                              |
+| ----------------------- | ---------- | -------------------------------------------------- |
+| `type`                  | `"mask"`   |                                                    |
+| `left/top/width/height` | mm         | The clip box.                                      |
+| `typeMask`              | `"circle"` | Circle uses `min(width, height)` as diameter.      |
+| `children`              | array      | Drawn inside the clip (typically one `imageData`). |
 
 Child coordinates are **relative to the mask box** (so `left: 0, top: 0` = the
 mask's top-left).
@@ -206,38 +206,38 @@ mask's top-left).
 
 Draws a raster image (JPEG/PNG). Typically nested inside a `mask`.
 
-| Property             | Type    | Notes |
-| -------------------- | ------- | ----- |
-| `type`               | `"imageData"` | |
-| `left/top/width/height` | mm   | Target box (relative to parent). |
-| `src`                | string  | Filename/template (e.g. `"{{image}}"`), a `data:` URL, or a path. Bare filenames are resolved via the image folder (`--image-dir` / picked folder), matched case- and NFC-insensitively. |
-| `objectFit`          | `"cover"` \| `"contain"` \| `"fill"` | Default `"cover"`. |
-| `align`              | `"left"` \| `"center"` \| `"right"` \| number \| `"%"` | Horizontal placement (default center). |
-| `verticalAlign`      | `"top"` \| `"center"` \| `"bottom"` \| number \| `"%"` | Vertical placement (default center). |
-| `faceDetect`         | boolean | Place the photo via face detection (see below). |
-| `faceHeightFraction` | number  | Face box height ÷ mask height (default `0.6`). |
-| `faceCenterX`        | number  | Where the face center sits horizontally, `0..1` (default `0.5`). |
-| `faceCenterY`        | number  | Where the face center sits vertically, `0..1` (default `0.55`). |
+| Property                | Type                                                   | Notes                                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                  | `"imageData"`                                          |                                                                                                                                                                                          |
+| `left/top/width/height` | mm                                                     | Target box (relative to parent).                                                                                                                                                         |
+| `src`                   | string                                                 | Filename/template (e.g. `"{{image}}"`), a `data:` URL, or a path. Bare filenames are resolved via the image folder (`--image-dir` / picked folder), matched case- and NFC-insensitively. |
+| `objectFit`             | `"cover"` \| `"contain"` \| `"fill"`                   | Default `"cover"`.                                                                                                                                                                       |
+| `align`                 | `"left"` \| `"center"` \| `"right"` \| number \| `"%"` | Horizontal placement (default center).                                                                                                                                                   |
+| `verticalAlign`         | `"top"` \| `"center"` \| `"bottom"` \| number \| `"%"` | Vertical placement (default center).                                                                                                                                                     |
+| `faceDetect`            | boolean                                                | Place the photo via face detection (see below).                                                                                                                                          |
+| `faceHeightFraction`    | number                                                 | Face box height ÷ mask height (default `0.6`).                                                                                                                                           |
+| `faceCenterX`           | number                                                 | Where the face center sits horizontally, `0..1` (default `0.5`).                                                                                                                         |
+| `faceCenterY`           | number                                                 | Where the face center sits vertically, `0..1` (default `0.55`).                                                                                                                          |
 
 ### qrcode
 
 Generates and embeds a QR code (via the `qrcode` package).
 
-| Property   | Type    | Notes |
-| ---------- | ------- | ----- |
-| `type`     | `"qrcode"` | |
-| `left/top/width/height` | mm | The QR box. |
-| `text`     | string  | Encoded value; may contain templates. |
+| Property                | Type       | Notes                                 |
+| ----------------------- | ---------- | ------------------------------------- |
+| `type`                  | `"qrcode"` |                                       |
+| `left/top/width/height` | mm         | The QR box.                           |
+| `text`                  | string     | Encoded value; may contain templates. |
 
 ### circle / ellipse
 
 A filled circle/ellipse (e.g. a small registration dot).
 
-| Property   | Type       | Notes |
-| ---------- | ---------- | ----- |
-| `type`     | `"circle"` (or `"ellipse"`) | |
-| `left/top/width/height` | mm | Bounding box. |
-| `color`    | hex string | Fill color (default `#808080`). |
+| Property                | Type                        | Notes                           |
+| ----------------------- | --------------------------- | ------------------------------- |
+| `type`                  | `"circle"` (or `"ellipse"`) |                                 |
+| `left/top/width/height` | mm                          | Bounding box.                   |
+| `color`                 | hex string                  | Fill color (default `#808080`). |
 
 ## Face detection
 

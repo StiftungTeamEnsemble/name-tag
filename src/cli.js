@@ -243,9 +243,7 @@ async function main() {
             buffer.byteOffset + buffer.byteLength,
           );
         } catch (error) {
-          console.warn(
-            `Warning: image "${filename}" not found in ${imageDir}`,
-          );
+          console.warn(`Warning: image "${filename}" not found in ${imageDir}`);
           return null;
         }
       };

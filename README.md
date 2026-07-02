@@ -133,10 +133,10 @@ Run `node src/cli.js --help` for the full option list, and see
 Select a layout with `--layout` (CLI) or the dropdown (web). Three ship by
 default:
 
-| Key | Name |
-| --- | --- |
-| `zweckform-L4785-20` | Team Ensemble Etiketten (Zweckform L4785-20) |
-| `zweckform-L4785-20-no-logo` | Neutral Etiketten (Zweckform L4785-20) |
+| Key                          | Name                                         |
+| ---------------------------- | -------------------------------------------- |
+| `zweckform-L4785-20`         | Team Ensemble Etiketten (Zweckform L4785-20) |
+| `zweckform-L4785-20-no-logo` | Neutral Etiketten (Zweckform L4785-20)       |
 | `team-ensemble-badge-90x135` | Team Ensemble Badge 90×135mm (3 auf A4 quer) |
 
 The **badge** layout places a face-detected circular photo, the name + company,
